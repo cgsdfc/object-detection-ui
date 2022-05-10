@@ -1,0 +1,10 @@
+(base) liao@liao:~/PycharmProjects/pythonProject$ /home/liao/anaconda3/bin/python /home/liao/PycharmProjects/pythonProject/untitled.py
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+
+Available platform plugins are: eglfs, linuxfb, minimal, minimalegl, offscreen, vnc, wayland-egl, wayland, wayland-xcomposite-egl, wayland-xcomposite-glx, webgl, xcb.
+
+已放弃 (核心已转储)
+
+https://cloud.tencent.com/developer/article/1726400
+
