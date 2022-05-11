@@ -1,11 +1,16 @@
-from Ui_app import Ui_MainWindow, QtWidgets
+from Ui_develop import *
+import sys
 
 
-if __name__ == "__main__":
-    import sys
+class MyWindow(QtWidgets.QMainWindow, Ui_MainWindowv):
+    def __init__(self):
+        super(MyWindow, self).__init__()
+
+        self.setupUi(self)
+
+
+if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
+    w = MyWindow()
+    w.show()
     sys.exit(app.exec_())
