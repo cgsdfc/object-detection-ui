@@ -1784,7 +1784,7 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_7">
                  <item>
-                  <widget class="QPushButton" name="pb_data_config">
+                  <widget class="QPushButton" name="pb_data_config_pretrain">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(175, 177, 255);</string>
                    </property>
@@ -1794,7 +1794,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="le_data_config">
+                  <widget class="QLineEdit" name="le_data_config_pretrain">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(207, 207, 207);</string>
                    </property>
@@ -1808,7 +1808,7 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_8">
                  <item>
-                  <widget class="QPushButton" name="pb_model_path">
+                  <widget class="QPushButton" name="pb_model_path_pretrain">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(175, 177, 255);</string>
                    </property>
@@ -1818,7 +1818,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="le_model_path">
+                  <widget class="QLineEdit" name="le_model_path_pretrain">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(207, 207, 207);</string>
                    </property>
@@ -2747,7 +2747,7 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_9">
                  <item>
-                  <widget class="QPushButton" name="pb_data_config_2">
+                  <widget class="QPushButton" name="pb_data_config_fewtune">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(175, 177, 255);</string>
                    </property>
@@ -2757,7 +2757,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="le_data_config_2">
+                  <widget class="QLineEdit" name="le_data_config_fewtune">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(207, 207, 207);</string>
                    </property>
@@ -2771,7 +2771,7 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_10">
                  <item>
-                  <widget class="QPushButton" name="pb_model_path_2">
+                  <widget class="QPushButton" name="pb_model_path_fewtune">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(175, 177, 255);</string>
                    </property>
@@ -2781,7 +2781,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="le_model_path_2">
+                  <widget class="QLineEdit" name="le_model_path_fewtune">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(207, 207, 207);</string>
                    </property>
