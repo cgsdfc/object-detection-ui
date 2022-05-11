@@ -16,6 +16,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.pb_project_path.clicked.connect(
             self.pb_project_path_fun
         )
+        return
+        
         self.ui.pb_data_path.clicked.connect(
             self.pb_data_path_fun
         )

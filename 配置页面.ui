@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>579</width>
-    <height>300</height>
+    <width>601</width>
+    <height>341</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QTabWidget" name="tabWidget">
+  <widget class="QTabWidget" name="tabWidget_2">
    <property name="geometry">
     <rect>
-     <x>90</x>
-     <y>80</y>
-     <width>278</width>
-     <height>173</height>
+     <x>20</x>
+     <y>40</y>
+     <width>261</width>
+     <height>271</height>
     </rect>
    </property>
    <property name="palette">
@@ -440,85 +440,24 @@
    <property name="currentIndex">
     <number>0</number>
    </property>
-   <widget class="QWidget" name="tab">
+   <widget class="QWidget" name="tab_11">
     <attribute name="title">
-     <string>路径配置</string>
+     <string>日志输出</string>
     </attribute>
-    <layout class="QVBoxLayout" name="verticalLayout_3">
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QPushButton" name="load_train_path">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(175, 177, 255);</string>
-             </property>
-             <property name="text">
-              <string>工程路径</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="load_train_pic_path">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(207, 207, 207);</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
-           <item>
-            <widget class="QPushButton" name="load_train_path_2">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(175, 177, 255);</string>
-             </property>
-             <property name="text">
-              <string>数据路径</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLineEdit" name="load_train_pic_path_2">
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(207, 207, 207);</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
-         <item>
-          <widget class="QPushButton" name="load_train_path_3">
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(175, 177, 255);</string>
-           </property>
-           <property name="text">
-            <string>模型权重路径</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="load_train_pic_path_3">
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(207, 207, 207);</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-      </layout>
+    <layout class="QGridLayout" name="gridLayout_10">
+     <item row="0" column="0">
+      <widget class="QTextEdit" name="te_screen_display">
+       <property name="styleSheet">
+        <string notr="true">background-color: rgb(200, 200, 200);</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
   </widget>
+  <zorder>tabWidget_2</zorder>
+  <zorder>tabWidget</zorder>
+  <zorder>tabWidget_2</zorder>
  </widget>
  <resources/>
  <connections/>
