@@ -1,6 +1,6 @@
 from Ui_develop import *
 import sys
-from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit
+from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit, QLabel
 import os
 from pathlib import Path
 
@@ -65,6 +65,29 @@ class MyWindow(QtWidgets.QMainWindow):
             directory=self.model_dir(),
         )
 
+        # 目标检测
+        self.open_image(
+            self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
+        )
+        
+
+    def open_image(self, button: QPushButton, label: QLabel, directory=None):
+        def open_show_image():
+            value, _ = QFileDialog.getOpenFileName(
+                self, "打开图像", directory=directory, filter="*.jpg;;*.jpeg;;"
+            )
+            if not value:
+                print("用户没有任何输入")
+                return
+            image = QtGui.QPixmap(value).scaled(label.width(), label.height())
+            if image.isNull():
+                QMessageBox.warning(self, "错误", f"文件{value}不是合法的图像格式。")
+                return
+
+            label.setPixmap(image)
+
+        button.clicked.connect(open_show_image)
+
     def project_dir(self):
         value = self.ui.le_project_path.text()
         if value and os.path.isdir(value):
@@ -88,6 +111,12 @@ class MyWindow(QtWidgets.QMainWindow):
         if prj is None:
             return None
         return os.path.join(prj, "backup")
+
+    def image_dir(self):
+        dir = self.ui.le_data_path.text()
+        if dir and os.path.isdir(dir):
+            return os.path.join(dir, "evaluation", "images")
+        return None
 
     def filepath_setter(
         self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
