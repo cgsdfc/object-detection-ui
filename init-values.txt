@@ -1,0 +1,16 @@
+基本配置：
+工程路径： /home/liao/codes/FSODM
+数据路径： /home/liao/codes/FSODM/dataset/NWPU
+
+模型架构配置：
+主干网络： cfg/darknet_yolov3_spp.cfg
+重加权网络： cfg/reweighting_net.cfg
+
+预训练配置：
+数据集配置： cfg/fewyolov3_nwpu.data
+模型保存路径： 
+
+小样本微调配置：
+数据集配置： cfg/fewtunev3_nwpu_10shot.data
+模型保存路径：
+
