@@ -3651,7 +3651,7 @@
         <item row="1" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_12">
           <item>
-           <widget class="QPushButton" name="load_model_5">
+           <widget class="QPushButton" name="pb_pretrain_stop">
             <property name="palette">
              <palette>
               <active>
@@ -3765,7 +3765,7 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="load_model_6">
+           <widget class="QPushButton" name="pb_pretrain_start">
             <property name="styleSheet">
              <string notr="true">background-color: rgb(209, 209, 104);</string>
             </property>
@@ -3777,7 +3777,7 @@
          </layout>
         </item>
         <item row="0" column="0">
-         <widget class="QGraphicsView" name="graphicsView_pretrain_metrics_3"/>
+         <widget class="QGraphicsView" name="gv_pretrain_loss"/>
         </item>
        </layout>
       </widget>
@@ -4215,7 +4215,7 @@
        </attribute>
        <layout class="QGridLayout" name="gridLayout_13">
         <item row="0" column="0">
-         <widget class="QTextEdit" name="te_screen_display">
+         <widget class="QTextEdit" name="te_pretrain_logging">
           <property name="styleSheet">
            <string notr="true">background-color: rgb(200, 200, 200);</string>
           </property>
@@ -4662,12 +4662,12 @@
        </attribute>
        <layout class="QGridLayout" name="gridLayout_10">
         <item row="0" column="0">
-         <widget class="QGraphicsView" name="graphicsView_pretrain_metrics_4"/>
+         <widget class="QGraphicsView" name="gv_fewtune_loss"/>
         </item>
         <item row="1" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_13">
           <item>
-           <widget class="QPushButton" name="load_model_7">
+           <widget class="QPushButton" name="pb_fewtune_stop">
             <property name="palette">
              <palette>
               <active>
@@ -4781,7 +4781,7 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="load_model_8">
+           <widget class="QPushButton" name="pb_fewtune_start">
             <property name="styleSheet">
              <string notr="true">background-color: rgb(209, 209, 104);</string>
             </property>
@@ -5228,7 +5228,7 @@
        </attribute>
        <layout class="QGridLayout" name="gridLayout_15">
         <item row="0" column="0">
-         <widget class="QTextEdit" name="te_screen_display_3">
+         <widget class="QTextEdit" name="te_fewtune_logging">
           <property name="styleSheet">
            <string notr="true">background-color: rgb(200, 200, 200);</string>
           </property>
@@ -5237,12 +5237,6 @@
        </layout>
       </widget>
      </widget>
-     <zorder>tabWidget_2</zorder>
-     <zorder>tabWidget_3</zorder>
-     <zorder>load_model_7</zorder>
-     <zorder>load_model_8</zorder>
-     <zorder>horizontalSpacer_4</zorder>
-     <zorder>tabWidget_4</zorder>
     </widget>
     <widget class="QWidget" name="tab_12">
      <attribute name="title">
@@ -5252,7 +5246,7 @@
       <item row="0" column="0">
        <layout class="QGridLayout" name="gridLayout_6">
         <item row="1" column="1">
-         <widget class="QPushButton" name="recognit_batch_2">
+         <widget class="QPushButton" name="pb_objdet_detect">
           <property name="styleSheet">
            <string notr="true">background-color: rgb(209, 209, 104);</string>
           </property>
@@ -5262,7 +5256,7 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLabel" name="label_img_show_2">
+         <widget class="QLabel" name="lb_objdet_output">
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -5284,7 +5278,7 @@
          </widget>
         </item>
         <item row="1" column="0">
-         <widget class="QPushButton" name="recognit_batch">
+         <widget class="QPushButton" name="pb_objdet_open">
           <property name="styleSheet">
            <string notr="true">background-color: rgb(209, 209, 104);</string>
           </property>
@@ -5294,7 +5288,7 @@
          </widget>
         </item>
         <item row="0" column="0">
-         <widget class="QLabel" name="label_img_show">
+         <widget class="QLabel" name="lb_objdet_input">
           <property name="maximumSize">
            <size>
             <width>16777215</width>
