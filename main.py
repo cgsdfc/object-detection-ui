@@ -22,6 +22,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.setWindowTitle("小样本遥感图像目标检测")
         self.config_changed = False
+        self.is_training = False # 是否正在训练。
 
         # 辅助变量
         self.python_path = self.ui.le_python_path_pretrain.text
@@ -117,8 +118,19 @@ class MyWindow(QtWidgets.QMainWindow):
         )
         print(f"小样本微调命令：{command}")
         return command
+            # reply = QMessageBox.question(self, '重新开始训练', '已经重新开始训练？', QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
 
+            # if reply == QMessageBox.Yes:
+            #     print('退出')
+            # else:
+            #     print('不退出')
+            
     def pretrain_start(self):
+        if self.is_training:
+            QMessageBox.warning('已经有一个训练进程，请等待当前训练完成，或点击终止以停止当前训练。')
+            return
+
+
         self.pretrain_command()
 
     def fewtune_start(self):
