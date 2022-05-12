@@ -3,8 +3,16 @@ import sys
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit, QLabel
 import os
 from pathlib import Path
+import shlex
+
 
 CODES_DIR = "/home/liao/codes"
+
+# PYTHON_INTERPRETER = "/home/liao/anaconda3/envs/python27/bin/python"
+
+
+def python_dir():
+    return "/home/liao/anaconda3/envs"
 
 
 class MyWindow(QtWidgets.QMainWindow):
@@ -13,6 +21,15 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.setWindowTitle("小样本遥感图像目标检测")
+        self.config_changed = False
+
+        # 辅助变量
+        self.python_path = self.ui.le_python_path_pretrain.text
+        self.reweight_config = self.ui.le_reweight_config.text
+        self.backbone_config = self.ui.le_backbone_config.text
+        self.pretrain_data_config = self.ui.le_data_config_pretrain.text
+        self.fewtune_data_config = self.ui.le_data_config_fewtune.text
+        self.fewtune_model_path = self.ui.le_model_path_fewtune.text
 
         # 配置文件的callback
 
@@ -49,9 +66,9 @@ class MyWindow(QtWidgets.QMainWindow):
             directory=self.configure_dir(),
         )
         self.filepath_setter(
-            self.ui.pb_model_path_pretrain,
-            self.ui.le_model_path_pretrain,
-            directory=self.model_dir(),
+            self.ui.pb_python_path_pretrain,
+            self.ui.le_python_path_pretrain,
+            directory=python_dir(),
         )
         ## 小样本微调配置
         self.filepath_setter(
@@ -69,7 +86,71 @@ class MyWindow(QtWidgets.QMainWindow):
         self.open_image(
             self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
         )
-        
+
+        # 预训练/小样本微调
+        self.ui.pb_pretrain_start.clicked.connect(self.pretrain_command)
+        self.ui.pb_fewtune_start.clicked.connect(self.fewtune_command)
+
+    def pretrain_command(self):
+        command = " ".join(
+            [
+                self.python_path(),
+                "train.py",
+                self.pretrain_data_config(),
+                self.backbone_config(),
+                self.reweight_config(),
+            ]
+        )
+        print(f"预训练命令：{command}")
+        return command
+
+    def fewtune_command(self):
+        command = " ".join(
+            [
+                self.python_path(),
+                "train.py",
+                self.fewtune_data_config(),
+                self.backbone_config(),
+                self.reweight_config(),
+                self.fewtune_model_path(),
+            ]
+        )
+        print(f"小样本微调命令：{command}")
+        return command
+
+    def pretrain_start(self):
+        self.pretrain_command()
+
+    def fewtune_start(self):
+        self.fewtune_command()
+
+    def check_config(self):
+        "检查一切路径不为空，不空则肯定是存在的。"
+        if not self.config_changed:
+            return True
+        ok = True
+
+        def check_filepath(name, path):
+            nonlocal ok
+            if not path:
+                QMessageBox.warning(f"{name} 的值不能为空。")
+                ok = False
+
+        # self.python_path = self.ui.le_python_path_pretrain.text
+        # self.reweight_config = self.ui.le_reweight_config.text
+        # self.backbone_config = self.ui.le_backbone_config.text
+        # self.pretrain_data_config = self.ui.le_data_config_pretrain.text
+        # self.fewtune_data_config = self.ui.le_data_config_fewtune.text
+        # self.fewtune_model_path = self.ui.le_model_path_fewtune.text
+
+        check_filepath("解析器路径", self.python_path())
+        check_filepath("重加权网络配置", self.reweight_config())
+        check_filepath("主干网络配置", self.backbone_config())
+        check_filepath("预训练数据配置", self.pretrain_data_config())
+        check_filepath("小样本微调数据配置", self.fewtune_data_config())
+        check_filepath("小样本微调预训练模型路径", self.fewtune_model_path())
+
+        return ok
 
     def open_image(self, button: QPushButton, label: QLabel, directory=None):
         def open_show_image():
@@ -121,6 +202,8 @@ class MyWindow(QtWidgets.QMainWindow):
     def filepath_setter(
         self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
     ):
+        self.config_changed = True
+
         def slot():
             if isdir:
                 value = QFileDialog.getExistingDirectory(

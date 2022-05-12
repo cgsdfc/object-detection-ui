@@ -2220,7 +2220,7 @@
                      <string notr="true">background-color: rgb(175, 177, 255);</string>
                     </property>
                     <property name="text">
-                     <string>模型保存路径</string>
+                     <string>预训练模型</string>
                     </property>
                    </widget>
                   </item>
@@ -2228,6 +2228,9 @@
                    <widget class="QLineEdit" name="le_model_path_fewtune">
                     <property name="styleSheet">
                      <string notr="true">background-color: rgb(207, 207, 207);</string>
+                    </property>
+                    <property name="text">
+                     <string>/home/liao/codes/FSODM/backup/metayolov3_nwpu_300_200_novel0_neg1/000260.weights</string>
                     </property>
                    </widget>
                   </item>
@@ -3182,19 +3185,22 @@
                 <item>
                  <layout class="QHBoxLayout" name="horizontalLayout_8">
                   <item>
-                   <widget class="QPushButton" name="pb_model_path_pretrain">
+                   <widget class="QPushButton" name="pb_python_path_pretrain">
                     <property name="styleSheet">
                      <string notr="true">background-color: rgb(175, 177, 255);</string>
                     </property>
                     <property name="text">
-                     <string>模型保存路径</string>
+                     <string>解析器路径</string>
                     </property>
                    </widget>
                   </item>
                   <item>
-                   <widget class="QLineEdit" name="le_model_path_pretrain">
+                   <widget class="QLineEdit" name="le_python_path_pretrain">
                     <property name="styleSheet">
                      <string notr="true">background-color: rgb(207, 207, 207);</string>
+                    </property>
+                    <property name="text">
+                     <string>/home/liao/anaconda3/envs/python27/bin/python</string>
                     </property>
                    </widget>
                   </item>
