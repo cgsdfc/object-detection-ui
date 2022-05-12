@@ -1618,7 +1618,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget_config.setCurrentIndex(3)
+        self.tabWidget_config.setCurrentIndex(1)
         self.tabWidget_arch_config.setCurrentIndex(0)
         self.tabWidget_fewtune_config.setCurrentIndex(0)
         self.tabWidget_basic_config.setCurrentIndex(0)
@@ -1658,7 +1658,7 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "选择任务："))
         self.comboBox_train_mode.setItemText(0, _translate("MainWindow", "预训练"))
         self.comboBox_train_mode.setItemText(1, _translate("MainWindow", "小样本微调"))
-        self.tabWidget_config.setTabText(self.tabWidget_config.indexOf(self.tab_9), _translate("MainWindow", "预训练"))
+        self.tabWidget_config.setTabText(self.tabWidget_config.indexOf(self.tab_9), _translate("MainWindow", "训练"))
         self.pb_objdet_detect.setText(_translate("MainWindow", "识别"))
         self.pb_objdet_open.setText(_translate("MainWindow", "打开"))
         self.tabWidget_config.setTabText(self.tabWidget_config.indexOf(self.tab_12), _translate("MainWindow", "单图识别"))

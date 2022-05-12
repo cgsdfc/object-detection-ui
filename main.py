@@ -11,17 +11,27 @@ CODES_DIR = "/home/liao/codes"
 
 # PYTHON_INTERPRETER = "/home/liao/anaconda3/envs/python27/bin/python"
 
+
 class TrainMode(enum.Enum):
     pretrain = 0
     fewtune = 1
 
+
 TEXT_TO_TRAIN_MODE = {
-    '预训练': TrainMode.pretrain,
-    '小样本微调': TrainMode.fewtune,
+    "预训练": TrainMode.pretrain,
+    "小样本微调": TrainMode.fewtune,
 }
+
 
 def python_dir():
     return "/home/liao/anaconda3/envs"
+
+
+class EmittingStream(QtCore.QObject):
+    textWritten = QtCore.pyqtSignal(str)
+
+    def write(self, text):
+        self.textWritten.emit(str(text))
 
 
 class MyWindow(QtWidgets.QMainWindow):
@@ -31,8 +41,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.setWindowTitle("小样本遥感图像目标检测")
         self.config_changed = False
-        self.is_training = False # 是否正在训练。
-        
+        self.is_training = False  # 是否正在训练。
 
         # 辅助变量
         self.python_path = self.ui.le_python_path_pretrain.text
@@ -41,6 +50,10 @@ class MyWindow(QtWidgets.QMainWindow):
         self.pretrain_data_config = self.ui.le_data_config_pretrain.text
         self.fewtune_data_config = self.ui.le_data_config_fewtune.text
         self.fewtune_model_path = self.ui.le_model_path_fewtune.text
+        self.console = self.ui.te_train_logging
+        self.train_mode_raw = self.ui.comboBox_train_mode.currentText
+
+
 
         # 配置文件的callback
 
@@ -98,12 +111,27 @@ class MyWindow(QtWidgets.QMainWindow):
             self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
         )
 
-        # 预训练/小样本微调
-        self.ui.pb_pretrain_start.clicked.connect(self.pretrain_command)
+        # 训练模式
+        self.ui.comboBox_train_mode.currentTextChanged.connect(
+            lambda: print(f"训练模式改变：{self.train_mode()}")
+        )
+        self.ui.pb_train_start.clicked.connect(self.train_start)
+
 
     def train_mode(self):
-        return TEXT_TO_TRAIN_MODE[self.ui.comboBox_train_mode.currentText()]
-        
+        return TEXT_TO_TRAIN_MODE[self.train_mode_raw()]
+
+    def get_config_dict(self) -> dict:
+        config_dict = {}
+        config_dict.setdefault("解析器路径", self.python_path())
+        config_dict.setdefault("重加权网络配置", self.reweight_config())
+        config_dict.setdefault("主干网络配置", self.backbone_config())
+        config_dict.setdefault("预训练数据配置", self.pretrain_data_config())
+        config_dict.setdefault("小样本微调数据配置", self.fewtune_data_config())
+        config_dict.setdefault("小样本微调预训练模型路径", self.fewtune_model_path())
+        return config_dict
+
+
     def pretrain_command(self):
         command = " ".join(
             [
@@ -130,23 +158,26 @@ class MyWindow(QtWidgets.QMainWindow):
         )
         print(f"小样本微调命令：{command}")
         return command
-            # reply = QMessageBox.question(self, '重新开始训练', '已经重新开始训练？', QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
 
-            # if reply == QMessageBox.Yes:
-            #     print('退出')
-            # else:
-            #     print('不退出')
-
-    def pretrain_start(self):
+    def train_start(self):
         if self.is_training:
-            QMessageBox.warning('已经有一个训练进程，请等待当前训练完成，或点击终止以停止当前训练。')
+            QMessageBox.warning(self, "警告", "已经有一个训练进程，请等待当前训练完成，或点击终止以停止当前训练。")
             return
+        if not self.check_config():
+            return
+        self.console.clear()
+        self.console.append(f'当前训练模式：{self.train_mode_raw()}')
+        self.console.append('配置文件如下：')
+        for name, value in self.get_config_dict().items():
+            self.console.append(f'{name}：{value}')
 
+        self.is_training = True
 
-        self.pretrain_command()
-
-    def fewtune_start(self):
-        self.fewtune_command()
+    def train_stop(self):
+        if not self.is_training:
+            return
+        reply = QMessageBox.question(self, "警告", "已经有一个训练进程，")
+        
 
     def check_config(self):
         "检查一切路径不为空，不空则肯定是存在的。"
@@ -157,24 +188,21 @@ class MyWindow(QtWidgets.QMainWindow):
         def check_filepath(name, path):
             nonlocal ok
             if not path:
-                QMessageBox.warning(f"{name} 的值不能为空。")
+                QMessageBox.warning(self, "错误", f"{name} 的值不能为空。")
                 ok = False
 
-        # self.python_path = self.ui.le_python_path_pretrain.text
-        # self.reweight_config = self.ui.le_reweight_config.text
-        # self.backbone_config = self.ui.le_backbone_config.text
-        # self.pretrain_data_config = self.ui.le_data_config_pretrain.text
-        # self.fewtune_data_config = self.ui.le_data_config_fewtune.text
-        # self.fewtune_model_path = self.ui.le_model_path_fewtune.text
-
-        check_filepath("解析器路径", self.python_path())
-        check_filepath("重加权网络配置", self.reweight_config())
-        check_filepath("主干网络配置", self.backbone_config())
-        check_filepath("预训练数据配置", self.pretrain_data_config())
-        check_filepath("小样本微调数据配置", self.fewtune_data_config())
-        check_filepath("小样本微调预训练模型路径", self.fewtune_model_path())
+        for name, value in self.get_config_dict().items():
+            check_filepath(name, value)
 
         return ok
+
+    def put_image(self, image_path, label: QLabel):
+        "将一个图片路径显示到label上面"
+        image = QtGui.QPixmap(image_path).scaled(label.width(), label.height())
+        if image.isNull():
+            return False
+        label.setPixmap(image)
+        return True
 
     def open_image(self, button: QPushButton, label: QLabel, directory=None):
         def open_show_image():
@@ -184,12 +212,9 @@ class MyWindow(QtWidgets.QMainWindow):
             if not value:
                 print("用户没有任何输入")
                 return
-            image = QtGui.QPixmap(value).scaled(label.width(), label.height())
-            if image.isNull():
+            if not self.put_image(value, label):
                 QMessageBox.warning(self, "错误", f"文件{value}不是合法的图像格式。")
                 return
-
-            label.setPixmap(image)
 
         button.clicked.connect(open_show_image)
 
@@ -218,10 +243,7 @@ class MyWindow(QtWidgets.QMainWindow):
         return os.path.join(prj, "backup")
 
     def image_dir(self):
-        dir = self.ui.le_data_path.text()
-        if dir and os.path.isdir(dir):
-            return os.path.join(dir, "evaluation", "images")
-        return None
+        return "/home/liao/codes/Object_Detection_UI/images/input"
 
     def filepath_setter(
         self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
