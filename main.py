@@ -56,7 +56,6 @@ class MyWindow(QtWidgets.QMainWindow):
         super(MyWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.setWindowTitle("小样本遥感图像目标检测")
         self.config_changed = False
         self.is_training = False  # 是否正在训练。
 
@@ -133,37 +132,44 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.pb_train_start.clicked.connect(self.train_start)
         self.ui.pb_train_stop.clicked.connect(self.train_stop)
         self.ui.progressBar_train.reset()
-        self.p1, self.p2 = self.set_graph_ui()
+        self.init_plot()
 
-    def plot_sin_cos(self):
+    def update_plot(self):
         t = np.linspace(0, 20, 200)
-        y_sin = np.sin(t)
-        y_cos = np.cos(t)
-        self.p1.plot(t, y_sin, pen="g", name="sin(x)", clear=True)
-        self.p2.plot(t, y_cos, pen="g", name="con(x)", clear=True)
-        # self.p1.legend = None  # 重新绘图是清空legend
-        # self.p2.legend = None
+        loss = np.exp(-t)
+        metrics = np.exp(t)
+        self.plt_loss.plot(t, loss, pen="b", name="loss")
+        self.plt_metrics.plot(t, metrics, pen="r", name="ACC")
 
-    def set_graph_ui(self):
+    def init_plot(self):
         # pg.setConfigOption(antialias=True)
+        pg.setConfigOption("background", "#FFFFFF")
+        pg.setConfigOption("foreground", "k")
+
         win = pg.GraphicsLayoutWidget()
-        self.ui.graph_layout.addWidget(win)
-        p1 = win.addPlot(title="sin")
-        p1.setLabel("left", text="meg", color="#ffffff")  # y轴设置函数
-        p1.showGrid(x=True, y=True)  # 栅格设置函数
-        p1.setLogMode(x=False, y=False)  # False代表线性坐标轴，True代表对数坐标轴
-        p1.setLabel("bottom", text="time", units="s")  # x轴设置函数
-        # p1.addLegend()  # 可选择是否添加legend
+        layout = self.ui.graph_layout
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(win)
 
-        win.nextRow()  # layout换行，采用垂直排列，不添加此行则默认水平排列
-        p2 = win.addPlot(title="cos 函数")
-        p2.setLabel("left", text="meg", color="#ffffff")
-        p2.showGrid(x=True, y=True)
-        p2.setLogMode(x=False, y=False)
-        p2.setLabel("bottom", text="time", units="s")
-        # p2.addLegend()
+        # plt_loss = win.addPlot(title="损失函数")
+        plt_loss = win.addPlot()
+        plt_loss.setLabel("left", text="loss")  # y轴设置函数
+        # plt_loss.setLogScale(y=True)
+        plt_loss.showGrid(x=True, y=True)  # 栅格设置函数
+        # plt_loss.setLabel("bottom", text="epoch")  # x轴设置函数
+        plt_loss.addLegend()  # 可选择是否添加legend
 
-        return p1, p2
+        win.nextRow()
+        # plt_metrics = win.addPlot(title="指标")
+        plt_metrics = win.addPlot()
+        plt_metrics.setLabel("left", text="metrics")  # y轴设置函数
+        # plt_loss.setLogScale(y=True)
+        plt_metrics.showGrid(x=True, y=True)  # 栅格设置函数
+        # plt_metrics.setLabel("bottom", text="epoch")  # x轴设置函数
+        plt_metrics.addLegend()  # 可选择是否添加legend
+
+        self.plt_loss = plt_loss
+        self.plt_metrics = plt_metrics
 
     def train_mode(self):
         return TEXT_TO_TRAIN_MODE[self.train_mode_raw()]
@@ -223,7 +229,12 @@ class MyWindow(QtWidgets.QMainWindow):
         self.run_progress_bar(total_steps=5, step_time=0.1)
         self.console.append("加载完成，训练已启动。")
         self.is_training = True
-        self.plot_sin_cos()
+        self.clear_plot()
+        self.update_plot()
+
+    def clear_plot(self):
+        self.plt_loss.clear()
+        self.plt_metrics.clear()
 
     def run_progress_bar(self, total_steps, step_time):
         self.ui.progressBar_train.reset()
@@ -252,7 +263,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.console.append("正在终止训练进程，请等待。")
         # 进度条。
         self.run_progress_bar(4, 0.1)
-        self.console.append("训练进程已停止。。。")
+        self.console.append("训练进程已停止。")
         self.is_training = False
         print("训练进程已结束")
 
