@@ -4,12 +4,21 @@ from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit, QL
 import os
 from pathlib import Path
 import shlex
+import enum
 
 
 CODES_DIR = "/home/liao/codes"
 
 # PYTHON_INTERPRETER = "/home/liao/anaconda3/envs/python27/bin/python"
 
+class TrainMode(enum.Enum):
+    pretrain = 0
+    fewtune = 1
+
+TEXT_TO_TRAIN_MODE = {
+    '预训练': TrainMode.pretrain,
+    '小样本微调': TrainMode.fewtune,
+}
 
 def python_dir():
     return "/home/liao/anaconda3/envs"
@@ -23,6 +32,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.setWindowTitle("小样本遥感图像目标检测")
         self.config_changed = False
         self.is_training = False # 是否正在训练。
+        
 
         # 辅助变量
         self.python_path = self.ui.le_python_path_pretrain.text
@@ -90,8 +100,10 @@ class MyWindow(QtWidgets.QMainWindow):
 
         # 预训练/小样本微调
         self.ui.pb_pretrain_start.clicked.connect(self.pretrain_command)
-        self.ui.pb_fewtune_start.clicked.connect(self.fewtune_command)
 
+    def train_mode(self):
+        return TEXT_TO_TRAIN_MODE[self.ui.comboBox_train_mode.currentText()]
+        
     def pretrain_command(self):
         command = " ".join(
             [
@@ -124,7 +136,7 @@ class MyWindow(QtWidgets.QMainWindow):
             #     print('退出')
             # else:
             #     print('不退出')
-            
+
     def pretrain_start(self):
         if self.is_training:
             QMessageBox.warning('已经有一个训练进程，请等待当前训练完成，或点击终止以停止当前训练。')
