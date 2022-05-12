@@ -426,7 +426,7 @@
    </palette>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>小样本遥感图像目标检测</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="palette">
@@ -1269,7 +1269,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab_4">
      <attribute name="title">

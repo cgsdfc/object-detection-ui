@@ -1618,7 +1618,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget_config.setCurrentIndex(1)
+        self.tabWidget_config.setCurrentIndex(0)
         self.tabWidget_arch_config.setCurrentIndex(0)
         self.tabWidget_fewtune_config.setCurrentIndex(0)
         self.tabWidget_basic_config.setCurrentIndex(0)
@@ -1629,7 +1629,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "小样本遥感图像目标检测"))
         self.pb_backbone_config.setText(_translate("MainWindow", "主干网络"))
         self.le_backbone_config.setText(_translate("MainWindow", "cfg/darknet_yolov3_spp.cfg"))
         self.pb_reweight_config.setText(_translate("MainWindow", "重加权网络"))
