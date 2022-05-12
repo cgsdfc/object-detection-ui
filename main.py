@@ -1,13 +1,18 @@
 from Ui_develop import *
 import sys
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit, QLabel
+from PyQt5.QtCore import QThread, pyqtSignal
+import pyqtgraph as pg
+
 import os
 from pathlib import Path
 import shlex
 import enum
 import time
+
 # import numpy as np
 import random
+import numpy as np
 
 
 CODES_DIR = "/home/liao/codes"
@@ -35,6 +40,15 @@ class EmittingStream(QtCore.QObject):
 
     def write(self, text):
         self.textWritten.emit(str(text))
+
+
+class TrainThread(QThread):
+    train_start_signal = pyqtSignal(name="train_start")
+    train_step_signal = pyqtSignal(dict, name="train_step")
+    train_stop_signal = pyqtSignal(int, name="train_stop")
+
+    def run(self):
+        pass
 
 
 class MyWindow(QtWidgets.QMainWindow):
@@ -119,6 +133,37 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.pb_train_start.clicked.connect(self.train_start)
         self.ui.pb_train_stop.clicked.connect(self.train_stop)
         self.ui.progressBar_train.reset()
+        self.p1, self.p2 = self.set_graph_ui()
+
+    def plot_sin_cos(self):
+        t = np.linspace(0, 20, 200)
+        y_sin = np.sin(t)
+        y_cos = np.cos(t)
+        self.p1.plot(t, y_sin, pen="g", name="sin(x)", clear=True)
+        self.p2.plot(t, y_cos, pen="g", name="con(x)", clear=True)
+        # self.p1.legend = None  # 重新绘图是清空legend
+        # self.p2.legend = None
+
+    def set_graph_ui(self):
+        # pg.setConfigOption(antialias=True)
+        win = pg.GraphicsLayoutWidget()
+        self.ui.graph_layout.addWidget(win)
+        p1 = win.addPlot(title="sin")
+        p1.setLabel("left", text="meg", color="#ffffff")  # y轴设置函数
+        p1.showGrid(x=True, y=True)  # 栅格设置函数
+        p1.setLogMode(x=False, y=False)  # False代表线性坐标轴，True代表对数坐标轴
+        p1.setLabel("bottom", text="time", units="s")  # x轴设置函数
+        # p1.addLegend()  # 可选择是否添加legend
+
+        win.nextRow()  # layout换行，采用垂直排列，不添加此行则默认水平排列
+        p2 = win.addPlot(title="cos 函数")
+        p2.setLabel("left", text="meg", color="#ffffff")
+        p2.showGrid(x=True, y=True)
+        p2.setLogMode(x=False, y=False)
+        p2.setLabel("bottom", text="time", units="s")
+        # p2.addLegend()
+
+        return p1, p2
 
     def train_mode(self):
         return TEXT_TO_TRAIN_MODE[self.train_mode_raw()]
@@ -162,37 +207,36 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def train_start(self):
         if self.is_training:
-            print('已经有训练进程了，无法开始')
+            print("已经有训练进程了，无法开始")
             QMessageBox.warning(self, "警告", "已经有一个训练进程正在运行，请等待当前训练完成，或点击终止以停止当前训练。")
             return
         if not self.check_config():
-            print('配置非法，训练无法开始')
+            print("配置非法，训练无法开始")
             return
         self.console.clear()
         self.console.append(f"当前训练模式：{self.train_mode_raw()}")
         self.console.append("配置文件如下：")
         for name, value in self.get_config_dict().items():
             self.console.append(f"{name}：{value}")
-        self.console.append('正在加载模型和数据集，请等待。')
+        self.console.append("正在加载模型和数据集，请等待。")
         # TODO: 加载训练模型
         self.run_progress_bar(total_steps=5, step_time=0.1)
-        self.console.append('加载完成，训练已启动。')
-
+        self.console.append("加载完成，训练已启动。")
         self.is_training = True
+        self.plot_sin_cos()
 
     def run_progress_bar(self, total_steps, step_time):
         self.ui.progressBar_train.reset()
         self.ui.progressBar_train.setRange(0, total_steps)
         for step in range(total_steps):
-            sleep_time=random.gauss(mu=step_time, sigma=step_time/10)
+            sleep_time = random.gauss(mu=step_time, sigma=step_time / 10)
             time.sleep(sleep_time)
-            self.ui.progressBar_train.setValue(step+1)
+            self.ui.progressBar_train.setValue(step + 1)
         self.ui.progressBar_train.reset()
-        
 
     def train_stop(self):
         if not self.is_training:
-            print('当前没有训练进程')
+            print("当前没有训练进程")
             return
         reply = QMessageBox.question(
             self,
@@ -202,15 +246,15 @@ class MyWindow(QtWidgets.QMainWindow):
             QMessageBox.Cancel,
         )
         if reply == QMessageBox.Cancel:
-            print('取消终止训练')
+            print("取消终止训练")
             return
         # TODO：等待模型停止。
-        self.console.append('正在终止训练进程，请等待。')
+        self.console.append("正在终止训练进程，请等待。")
         # 进度条。
         self.run_progress_bar(4, 0.1)
-        self.console.append('训练进程已停止。。。')
+        self.console.append("训练进程已停止。。。")
         self.is_training = False
-        print('训练进程已结束')
+        print("训练进程已结束")
 
     def check_config(self):
         "检查一切路径不为空，不空则肯定是存在的。"
