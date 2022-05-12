@@ -5,6 +5,9 @@ import os
 from pathlib import Path
 import shlex
 import enum
+import time
+# import numpy as np
+import random
 
 
 CODES_DIR = "/home/liao/codes"
@@ -52,8 +55,6 @@ class MyWindow(QtWidgets.QMainWindow):
         self.fewtune_model_path = self.ui.le_model_path_fewtune.text
         self.console = self.ui.te_train_logging
         self.train_mode_raw = self.ui.comboBox_train_mode.currentText
-
-
 
         # 配置文件的callback
 
@@ -116,7 +117,8 @@ class MyWindow(QtWidgets.QMainWindow):
             lambda: print(f"训练模式改变：{self.train_mode()}")
         )
         self.ui.pb_train_start.clicked.connect(self.train_start)
-
+        self.ui.pb_train_stop.clicked.connect(self.train_stop)
+        self.ui.progressBar_train.reset()
 
     def train_mode(self):
         return TEXT_TO_TRAIN_MODE[self.train_mode_raw()]
@@ -130,7 +132,6 @@ class MyWindow(QtWidgets.QMainWindow):
         config_dict.setdefault("小样本微调数据配置", self.fewtune_data_config())
         config_dict.setdefault("小样本微调预训练模型路径", self.fewtune_model_path())
         return config_dict
-
 
     def pretrain_command(self):
         command = " ".join(
@@ -161,23 +162,55 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def train_start(self):
         if self.is_training:
-            QMessageBox.warning(self, "警告", "已经有一个训练进程，请等待当前训练完成，或点击终止以停止当前训练。")
+            print('已经有训练进程了，无法开始')
+            QMessageBox.warning(self, "警告", "已经有一个训练进程正在运行，请等待当前训练完成，或点击终止以停止当前训练。")
             return
         if not self.check_config():
+            print('配置非法，训练无法开始')
             return
         self.console.clear()
-        self.console.append(f'当前训练模式：{self.train_mode_raw()}')
-        self.console.append('配置文件如下：')
+        self.console.append(f"当前训练模式：{self.train_mode_raw()}")
+        self.console.append("配置文件如下：")
         for name, value in self.get_config_dict().items():
-            self.console.append(f'{name}：{value}')
+            self.console.append(f"{name}：{value}")
+        self.console.append('正在加载模型和数据集，请等待。')
+        # TODO: 加载训练模型
+        self.run_progress_bar(total_steps=5, step_time=0.1)
+        self.console.append('加载完成，训练已启动。')
 
         self.is_training = True
 
+    def run_progress_bar(self, total_steps, step_time):
+        self.ui.progressBar_train.reset()
+        self.ui.progressBar_train.setRange(0, total_steps)
+        for step in range(total_steps):
+            sleep_time=random.gauss(mu=step_time, sigma=step_time/10)
+            time.sleep(sleep_time)
+            self.ui.progressBar_train.setValue(step+1)
+        self.ui.progressBar_train.reset()
+        
+
     def train_stop(self):
         if not self.is_training:
+            print('当前没有训练进程')
             return
-        reply = QMessageBox.question(self, "警告", "已经有一个训练进程，")
-        
+        reply = QMessageBox.question(
+            self,
+            "确认",
+            "当前训练进程还未结束，确认终止当前训练进程吗？",
+            QMessageBox.Cancel | QMessageBox.Yes,
+            QMessageBox.Cancel,
+        )
+        if reply == QMessageBox.Cancel:
+            print('取消终止训练')
+            return
+        # TODO：等待模型停止。
+        self.console.append('正在终止训练进程，请等待。')
+        # 进度条。
+        self.run_progress_bar(4, 0.1)
+        self.console.append('训练进程已停止。。。')
+        self.is_training = False
+        print('训练进程已结束')
 
     def check_config(self):
         "检查一切路径不为空，不空则肯定是存在的。"
