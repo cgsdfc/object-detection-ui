@@ -68,12 +68,13 @@ class TrainThreadMocked(TrainThreadBase):
             self.msleep(1000)
             acc = random.random()
             loss = np.exp(-epoch)
-            line = f'{loss} {acc}'
+            line = f'{epoch} {loss} {acc}'
             print('训练线程发送日志')
             self.train_step_signal.emit(line)
         
         print('训练线程结束')
-        self.train_end_signal.emit(0)
+        rc = int(random.random()>0.5) # 测试异常退出的情况。
+        self.train_end_signal.emit(rc)
 
 
 class TrainThread(TrainThreadBase):
@@ -244,31 +245,32 @@ class MyWindow(QtWidgets.QMainWindow):
         # 白色背景，黑色前景。
         pg.setConfigOption("background", "#FFFFFF")
         pg.setConfigOption("foreground", "k")
+        pg.setConfigOption('antialias', True)
 
         win = pg.GraphicsLayoutWidget()
         layout = self.ui.graph_layout
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(win)
 
-        # plt_loss = win.addPlot(title="损失函数")
-        plt_loss = win.addPlot()
-        plt_loss.setLabel("left", text="loss")  # y轴设置函数
+        plt_loss = win.addPlot(title="损失函数")
+        # plt_loss = win.addPlot()
+        # plt_loss.setLabel("left", text="loss")  # y轴设置函数
         # plt_loss.setLogScale(y=True)
         plt_loss.showGrid(x=True, y=True)  # 栅格设置函数
         # plt_loss.setLabel("bottom", text="epoch")  # x轴设置函数
         plt_loss.addLegend()  # 可选择是否添加legend
 
         win.nextRow()
-        # plt_metrics = win.addPlot(title="指标")
-        plt_metrics = win.addPlot()
-        plt_metrics.setLabel("left", text="metrics")  # y轴设置函数
+        plt_metrics = win.addPlot(title="指标")
+        # plt_metrics = win.addPlot()
+        # plt_metrics.setLabel("left", text="metrics")  # y轴设置函数
         # plt_loss.setLogScale(y=True)
         plt_metrics.showGrid(x=True, y=True)  # 栅格设置函数
         # plt_metrics.setLabel("bottom", text="epoch")  # x轴设置函数
         plt_metrics.addLegend()  # 可选择是否添加legend
 
-        self.plt_loss: PlotDataItem = plt_loss.plot()
-        self.plt_metrics: PlotDataItem = plt_metrics.plot()
+        self.plt_loss: PlotDataItem = plt_loss.plot(name='loss')
+        self.plt_metrics: PlotDataItem = plt_metrics.plot(name='acc')
         self.loss_list = []
         self.metrics_list = []
 
@@ -358,8 +360,11 @@ class MyWindow(QtWidgets.QMainWindow):
         if reply == QMessageBox.Cancel:
             print("取消终止训练")
             return
-        self.console.append("正在终止训练进程，请等待。")
-        assert self.train_thread is not None
+        if self.train_thread is None:
+            return
+        # 这时候，线程可能发来结束通知，然后就把线程删除了。
+        # 但这时又不能把UI冻住，因为训练进程不能暂停。
+        # 但这时又不能把UI冻住，因为训练进程不能暂停。
         self.train_thread.requestInterruption()
         # 等待线程发来 interrupt 信号。
         
@@ -383,15 +388,22 @@ class MyWindow(QtWidgets.QMainWindow):
         self.is_training = True
         # 此时UI已经准备好接收线程的日志。
 
+    def is_mocked(self):
+        return isinstance(self.train_thread, TrainThreadMocked)
+
     def handle_train_step(self, line: str):
         "训练线程：发来一行训练日志"
         print(f'UI 收到一行训练日志：{line}')
-        loss, acc = map(float, line.split())
-        # 解析日志，更新绘图。
-        self.loss_list.append(loss)
-        self.metrics_list.append(acc)
-        self.plt_loss.setData(self.loss_list, pen='b')
-        self.plt_metrics.setData(self.metrics_list, pen='r')
+        if self.is_mocked():
+            epoch, loss, acc = map(float, line.split())
+            # 解析日志，更新绘图。
+            self.loss_list.append(loss)
+            self.metrics_list.append(acc)
+            self.plt_loss.setData(self.loss_list, pen='b')
+            self.plt_metrics.setData(self.metrics_list, pen='r')
+            # 日志要同步打到console
+            epoch = int(epoch)
+            self.console.append(f'epoch {epoch:04d} loss {loss:.4f} acc {acc*100:.2f}')
 
     def handle_train_interrupt(self):
         "训练线程：已经收到interrupt信号，run返回。"
@@ -407,6 +419,7 @@ class MyWindow(QtWidgets.QMainWindow):
         print(f'线程正常退出，进程返回值：{returncode}')
         self.stop_train_thread()
         self.console.append("-" * 10)
+        self.console.append('训练结束')
         self.console.append(f"训练进程返回值：{returncode}")
         if returncode:
             QMessageBox.warning(self, "警告", "训练进程异常退出，请检查配置。")
