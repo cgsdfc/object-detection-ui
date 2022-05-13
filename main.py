@@ -167,10 +167,10 @@ class TrainThread(TrainThreadBase):
     def kill_all_train_processes(self):
         to_kill: list[psutil.Process] = []
 
-        for p in psutil.process_iter():
+        for p in psutil.process_iter(attrs=['exe', 'cwd', 'cmdline']): # 注意：不能访问所有的属性，权限问题。
             if p.exe() == self.python_path() and p.cwd() == self.cwd:
                 cmdline = " ".join(p.cmdline())[:40]
-                print(f"发现残留进程：{p.pid()} {cmdline}")
+                print(f"发现残留进程：{p.pid} {cmdline}")
                 to_kill.append(p)
 
         for p in to_kill:
@@ -315,7 +315,7 @@ class MyWindow(QtWidgets.QMainWindow):
         pg.setConfigOption("background", "#FFFFFF")
         pg.setConfigOption("foreground", "k")
         pg.setConfigOption("antialias", True)
-        pg.setConfigOption("leftButtonPan", False)
+        # pg.setConfigOption("leftButtonPan", False)
 
         win = pg.GraphicsLayoutWidget()
         layout = self.ui.graph_layout
@@ -329,7 +329,7 @@ class MyWindow(QtWidgets.QMainWindow):
         plt_loss.showGrid(x=True, y=True)  # 栅格设置函数
         # plt_loss.setLabel("bottom", text="epoch")  # x轴设置函数
         plt_loss.addLegend()  # 可选择是否添加legend
-        plt_loss.setMouseEnabled(x=False, y=False)
+        # plt_loss.setMouseEnabled(x=False, y=False)
 
         win.nextRow()
         plt_metrics: PlotItem = win.addPlot(title="指标")
@@ -339,7 +339,7 @@ class MyWindow(QtWidgets.QMainWindow):
         plt_metrics.showGrid(x=True, y=True)  # 栅格设置函数
         # plt_metrics.setLabel("bottom", text="epoch")  # x轴设置函数
         plt_metrics.addLegend()  # 可选择是否添加legend
-        plt_metrics.setMouseEnabled(x=False, y=False)
+        # plt_metrics.setMouseEnabled(x=False, y=False)
 
         if self.is_mocked():
             self.plt_loss: PlotDataItem = plt_loss.plot(name="loss")
@@ -361,7 +361,6 @@ class MyWindow(QtWidgets.QMainWindow):
             }
             self.plt_data: dict[str, list] = defaultdict(list)
             self.plt_keys = self.plt.keys
-            self.plot_items = [plt_loss, plt_metrics]
 
     def init_objdet_tab(self):
         self.open_image(
@@ -551,8 +550,6 @@ class MyWindow(QtWidgets.QMainWindow):
             for key in self.plt_keys():
                 self.plt[key].clear()
                 self.plt_data[key].clear()
-            for item in self.plot_items:
-                item.clear()
 
     def run_progress_bar(self, total_steps, step_time):
         self.ui.progressBar_train.reset()
