@@ -22,3 +22,4 @@ https://blog.csdn.net/Freshduke/article/details/111544319
 
 https://blog.csdn.net/georgeandgeorge/article/details/106157450
 
+psutil.AccessDenied (pid=2)

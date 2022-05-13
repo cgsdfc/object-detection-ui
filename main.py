@@ -140,7 +140,6 @@ class TrainThread(TrainThreadBase):
         self.cmd = cmd
         assert os.path.isdir(cwd)
         self.cwd = cwd
-        # self.bufsize = 4
         self.p: subprocess.Popen = None  # 进程实例
 
     def handle_interrupt(self):
@@ -148,10 +147,10 @@ class TrainThread(TrainThreadBase):
         if not self.isInterruptionRequested():
             return False
         if self.p is not None:
-            print(f"正在杀死进程：{self.p.pid}")
+            # print(f"正在杀死进程：{self.p.pid}")
             try:
-                self.p.kill()
-                self.p.terminate()
+                # self.p.kill()
+                # self.p.terminate()
                 self.kill_all_train_processes()
             except Exception as e:
                 print(f"杀死进程时抛出异常：{e}")
@@ -168,11 +167,21 @@ class TrainThread(TrainThreadBase):
         to_kill: list[psutil.Process] = []
 
         for p in psutil.process_iter(attrs=['exe', 'cwd', 'cmdline']): # 注意：不能访问所有的属性，权限问题。
-            if p.exe() == self.python_path() and p.cwd() == self.cwd:
-                cmdline = " ".join(p.cmdline())[:40]
-                print(f"发现残留进程：{p.pid} {cmdline}")
+            try:
+                exe = p.exe()
+                cwd = p.cwd()
+                # cmdline = p.cmdline()
+            except:
+                continue
+
+            if exe == self.python_path() and cwd == self.cwd:
+                print(f"发现残留进程：{p.pid}")
+                # cmdline = " ".join(p.cmdline())[:40]
+                # print(f"发现残留进程：{p.pid} {cmdline}")
                 to_kill.append(p)
 
+        print(f'## {len(to_kill)}')
+        
         for p in to_kill:
             print(f"杀死进程 {p.pid}")
             os.kill(p.pid, signal.SIGKILL)
