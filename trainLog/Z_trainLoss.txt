@@ -1,0 +1,210 @@
+('save_interval', 20)
+novel classes: ['airplane', 'ship']
+('base_ids', [2, 3, 4, 5, 6, 7, 8, 9])
+logging to backup/metayolov3_nwpu_300_200_novel0_neg1
+('class_scale', 1)
+layer     filters    size              input                output
+    0 conv     32  3 x 3 / 1   512 x 512 x   3   ->   512 x 512 x  32
+    1 conv     64  3 x 3 / 2   512 x 512 x  32   ->   256 x 256 x  64
+    2 conv     32  1 x 1 / 1   256 x 256 x  64   ->   256 x 256 x  32
+    3 conv     64  3 x 3 / 1   256 x 256 x  32   ->   256 x 256 x  64
+    4 shortcut 1
+    5 conv    128  3 x 3 / 2   256 x 256 x  64   ->   128 x 128 x 128
+    6 conv     64  1 x 1 / 1   128 x 128 x 128   ->   128 x 128 x  64
+    7 conv    128  3 x 3 / 1   128 x 128 x  64   ->   128 x 128 x 128
+    8 shortcut 5
+    9 conv     64  1 x 1 / 1   128 x 128 x 128   ->   128 x 128 x  64
+   10 conv    128  3 x 3 / 1   128 x 128 x  64   ->   128 x 128 x 128
+   11 shortcut 8
+   12 conv    256  3 x 3 / 2   128 x 128 x 128   ->    64 x  64 x 256
+   13 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+   14 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+   15 shortcut 12
+   16 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+   17 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+   18 shortcut 15
+   19 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+   20 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+   21 shortcut 18
+   22 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+   23 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+   24 shortcut 21
+   25 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+   26 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+   27 shortcut 24
+   28 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+   29 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+   30 shortcut 27
+   31 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+   32 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+   33 shortcut 30
+   34 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+   35 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+   36 shortcut 33
+   37 conv    512  3 x 3 / 2    64 x  64 x 256   ->    32 x  32 x 512
+   38 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   39 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   40 shortcut 37
+   41 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   42 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   43 shortcut 40
+   44 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   45 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   46 shortcut 43
+   47 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   48 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   49 shortcut 46
+   50 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   51 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   52 shortcut 49
+   53 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   54 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   55 shortcut 52
+   56 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   57 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   58 shortcut 55
+   59 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   60 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   61 shortcut 58
+   62 conv   1024  3 x 3 / 2    32 x  32 x 512   ->    16 x  16 x1024
+   63 conv    512  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x 512
+   64 conv   1024  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x1024
+   65 shortcut 62
+   66 conv    512  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x 512
+   67 conv   1024  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x1024
+   68 shortcut 65
+   69 conv    512  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x 512
+   70 conv   1024  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x1024
+   71 shortcut 68
+   72 conv    512  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x 512
+   73 conv   1024  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x1024
+   74 shortcut 71
+   75 conv    512  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x 512
+   76 conv   1024  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x1024
+   77 conv    512  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x 512
+   78 max          5 x 5 / 1    16 x  16 x 512   ->    16 x  16 x 512
+   79 route  77
+   80 max          9 x 9 / 1    16 x  16 x 512   ->    16 x  16 x 512
+   81 route  77
+   82 max          13 x 13 / 1    16 x  16 x 512   ->    16 x  16 x 512
+   84 conv    512  1 x 1 / 1    16 x  16 x 512   ->    16 x  16 x 512
+   85 conv   1024  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x1024
+   86 conv    512  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x 512
+   87 conv   1024  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x1024
+   88 dconv  1024  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x1024
+   89 conv     18  1 x 1 / 1    16 x  16 x1024   ->    16 x  16 x  18
+   90 route  86
+   91 conv    256  1 x 1 / 1    16 x  16 x 512   ->    16 x  16 x 256
+   92 up             2          16 x  16 x 256   ->    32 x  32 x 256
+   93 route  92 61
+   94 conv    256  1 x 1 / 1    32 x  32 x 768   ->    32 x  32 x 256
+   95 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   96 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   97 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   98 conv    256  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 256
+   99 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+  100 dconv   512  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x 512
+  101 conv     18  1 x 1 / 1    32 x  32 x 512   ->    32 x  32 x  18
+  102 route  98
+  103 conv    128  1 x 1 / 1    32 x  32 x 256   ->    32 x  32 x 128
+  104 up             2          32 x  32 x 128   ->    64 x  64 x 128
+  105 route  104 36
+  106 conv    128  1 x 1 / 1    64 x  64 x 384   ->    64 x  64 x 128
+  107 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+  108 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+  109 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+  110 conv    128  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 128
+  111 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+  112 dconv   256  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x 256
+  113 conv     18  1 x 1 / 1    64 x  64 x 256   ->    64 x  64 x  18
+  114 detection
+---------------------------------------------------------------------
+layer     filters    size              input                output
+    0 conv     32  3 x 3 / 1   512 x 512 x   4   ->   512 x 512 x  32
+    1 max          2 x 2 / 2   512 x 512 x  32   ->   256 x 256 x  32
+    2 conv     64  3 x 3 / 1   256 x 256 x  32   ->   256 x 256 x  64
+    3 max          2 x 2 / 2   256 x 256 x  64   ->   128 x 128 x  64
+    4 conv    128  3 x 3 / 1   128 x 128 x  64   ->   128 x 128 x 128
+    5 max          2 x 2 / 2   128 x 128 x 128   ->    64 x  64 x 128
+    6 conv    256  3 x 3 / 1    64 x  64 x 128   ->    64 x  64 x 256
+    7 max          2 x 2 / 2    64 x  64 x 256   ->    32 x  32 x 256
+    8 conv    256  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 256
+    9 glomax       32 x 32 / 1    32 x  32 x 256   ->     1 x   1 x 256
+   10 route  7
+   11 conv    512  3 x 3 / 1    32 x  32 x 256   ->    32 x  32 x 512
+   12 max          2 x 2 / 2    32 x  32 x 512   ->    16 x  16 x 512
+   13 conv    512  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x 512
+   14 glomax       16 x 16 / 1    16 x  16 x 512   ->     1 x   1 x 512
+   15 route  12
+   16 conv   1024  3 x 3 / 1    16 x  16 x 512   ->    16 x  16 x1024
+   17 max          2 x 2 / 2    16 x  16 x1024   ->     8 x   8 x1024
+   18 conv   1024  3 x 3 / 1     8 x   8 x1024   ->     8 x   8 x1024
+   19 glomax       8 x 8 / 1     8 x   8 x1024   ->     1 x   1 x1024
+1 547 320800 3
+10
+===> Number of samples (before filtring): 547
+===> Number of samples (after filtring): 547
+('num classes: ', 8)
+2022-05-13 16:27:10 epoch 0/500, processed 0 samples, lr 1.000000e-03
+3: nGT 18, precision 0.000048, recall50 0.222222, recall75 0.055556, cls_acc 0.150943, loss: x 0.080637, y 0.099766, w 1.179458, h 0.936776, conf 75.881676, cls 2.074610, total 80.252922
+6: nGT 8, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.166667, loss: x 0.084459, y 0.087273, w 1.409232, h 1.175029, conf 60.893986, cls 2.063549, total 65.713524
+9: nGT 13, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.128205, loss: x 0.088915, y 0.079975, w 0.774382, h 0.434810, conf 51.936169, cls 2.049429, total 55.363678
+12: nGT 8, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.066711, y 0.069242, w 0.543257, h 0.195667, conf 38.393635, cls 2.040231, total 41.308743
+15: nGT 15, precision 0.000517, recall50 0.133333, recall75 0.000000, cls_acc 0.045455, loss: x 0.131146, y 0.131574, w 7.492163, h 3.780768, conf 26.992886, cls 2.155524, total 40.684063
+18: nGT 30, precision 0.001862, recall50 0.033333, recall75 0.000000, cls_acc 0.152941, loss: x 0.087378, y 0.115061, w 2.000634, h 1.330013, conf 24.910465, cls 1.988273, total 30.431826
+21: nGT 7, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.084088, y 0.086329, w 0.802969, h 1.753855, conf 16.121981, cls 2.200532, total 21.049755
+24: nGT 8, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.541667, loss: x 0.084318, y 0.081900, w 0.329284, h 0.574040, conf 19.654533, cls 1.874772, total 22.598848
+27: nGT 9, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.185185, loss: x 0.067586, y 0.047811, w 0.768397, h 0.859773, conf 11.898466, cls 2.085611, total 15.727644
+30: nGT 1, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.018751, y 0.093854, w 0.890871, h 0.729871, conf 13.569547, cls 2.067372, total 17.370266
+33: nGT 6, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.111111, loss: x 0.080178, y 0.128576, w 0.760491, h 0.905347, conf 8.375925, cls 2.138347, total 12.388864
+36: nGT 35, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.538462, loss: x 0.134117, y 0.107344, w 1.564889, h 1.453496, conf 6.055923, cls 1.862537, total 11.178305
+39: nGT 4, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.083333, loss: x 0.049000, y 0.094879, w 0.611748, h 0.387645, conf 8.045064, cls 2.135014, total 11.323350
+42: nGT 18, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.018868, loss: x 0.132838, y 0.087155, w 0.415881, h 1.088513, conf 6.739358, cls 2.184906, total 10.648651
+45: nGT 11, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.125000, loss: x 0.083228, y 0.117734, w 2.723930, h 0.831846, conf 5.842833, cls 2.100309, total 11.699879
+48: nGT 21, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.451613, loss: x 0.110892, y 0.093137, w 0.556017, h 1.052171, conf 5.212743, cls 1.900510, total 8.925470
+51: nGT 15, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.136364, loss: x 0.090958, y 0.076790, w 0.780098, h 0.511859, conf 5.650250, cls 2.113174, total 9.223129
+54: nGT 18, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.320000, loss: x 0.122891, y 0.125043, w 1.921237, h 6.759269, conf 5.091265, cls 1.854837, total 15.874541
+57: nGT 4, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.083333, loss: x 0.087997, y 0.184878, w 1.584101, h 0.773775, conf 5.372883, cls 1.883112, total 9.886746
+60: nGT 12, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.029412, loss: x 0.080459, y 0.124531, w 0.370005, h 0.596212, conf 5.019532, cls 2.247976, total 8.438716
+63: nGT 22, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.032787, loss: x 0.082488, y 0.109914, w 0.360846, h 0.176522, conf 4.918910, cls 2.030607, total 7.679288
+66: nGT 8, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.102695, y 0.120198, w 0.580414, h 0.145809, conf 4.972575, cls 2.145730, total 8.067423
+69: nGT 6, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.086144, y 0.105956, w 0.234330, h 0.389497, conf 5.030630, cls 1.941233, total 7.787789
+72: nGT 30, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.222222, loss: x 0.081789, y 0.080941, w 0.474909, h 0.632005, conf 5.334875, cls 2.078313, total 8.682833
+75: nGT 4, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.166667, loss: x 0.133889, y 0.248768, w 0.385171, h 0.711680, conf 6.490834, cls 2.065908, total 10.036249
+78: nGT 7, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.078974, y 0.155105, w 0.298051, h 0.433321, conf 14.288977, cls 2.355782, total 17.610210
+81: nGT 8, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.043478, loss: x 0.121276, y 0.103955, w 0.177317, h 0.382861, conf 10.072587, cls 2.043188, total 12.901184
+84: nGT 18, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.018519, loss: x 0.090170, y 0.064682, w 0.308227, h 0.700910, conf 5.338179, cls 2.060011, total 8.562179
+87: nGT 32, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.384615, loss: x 0.109017, y 0.065980, w 0.390009, h 0.281103, conf 9.943675, cls 1.759134, total 12.548917
+90: nGT 12, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.027778, loss: x 0.079934, y 0.094595, w 0.449767, h 0.188357, conf 4.786396, cls 1.996181, total 7.595230
+93: nGT 7, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.095238, loss: x 0.142336, y 0.076601, w 0.556863, h 0.318906, conf 5.491597, cls 2.048460, total 8.634762
+96: nGT 8, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.041667, loss: x 0.091633, y 0.082883, w 0.501036, h 0.664265, conf 4.655509, cls 2.049514, total 8.044840
+99: nGT 17, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.120000, loss: x 0.124034, y 0.094829, w 0.279482, h 0.860189, conf 4.712996, cls 2.015921, total 8.087451
+102: nGT 4, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.083333, loss: x 0.101655, y 0.089691, w 0.615134, h 0.946798, conf 5.057295, cls 1.926644, total 8.737217
+105: nGT 26, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.026316, loss: x 0.078878, y 0.074137, w 0.371299, h 0.461638, conf 4.475154, cls 1.992983, total 7.454089
+108: nGT 4, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.103762, y 0.070528, w 0.399934, h 0.657923, conf 5.459371, cls 2.356551, total 9.048068
+111: nGT 6, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.111111, loss: x 0.098610, y 0.058732, w 0.413292, h 0.308793, conf 5.228014, cls 2.037584, total 8.145025
+114: nGT 12, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.322581, loss: x 0.090620, y 0.093016, w 0.505313, h 1.021216, conf 5.317935, cls 2.166986, total 9.195086
+117: nGT 31, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.120879, loss: x 0.096864, y 0.084000, w 0.262312, h 0.393523, conf 4.584407, cls 2.000865, total 7.421972
+120: nGT 12, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.057143, loss: x 0.078106, y 0.092240, w 0.739684, h 0.826749, conf 5.105127, cls 1.988042, total 8.829948
+123: nGT 23, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.044118, loss: x 0.080209, y 0.100607, w 0.355043, h 0.205279, conf 5.012048, cls 2.148634, total 7.901820
+126: nGT 8, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.041667, loss: x 0.093733, y 0.066630, w 0.303591, h 0.591115, conf 5.028510, cls 1.968998, total 8.052577
+129: nGT 21, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.730159, loss: x 0.081216, y 0.097066, w 0.346590, h 0.668402, conf 4.321469, cls 1.813519, total 7.328262
+132: nGT 2, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.500000, loss: x 0.090142, y 0.092187, w 0.647855, h 0.441402, conf 5.107278, cls 1.677249, total 8.056113
+135: nGT 22, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.015385, loss: x 0.097161, y 0.076268, w 0.229403, h 0.806435, conf 4.518239, cls 2.060151, total 7.787657
+138: nGT 11, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.030303, loss: x 0.110486, y 0.090920, w 0.291278, h 0.225164, conf 5.146716, cls 2.094715, total 7.959280
+141: nGT 8, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.085623, y 0.103081, w 1.105540, h 0.646820, conf 4.433663, cls 2.204381, total 8.579109
+144: nGT 6, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.093111, y 0.111738, w 0.457965, h 0.669386, conf 5.068556, cls 2.033365, total 8.434121
+147: nGT 16, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.063830, loss: x 0.068105, y 0.093547, w 0.346869, h 0.170728, conf 4.755983, cls 2.165825, total 7.601057
+150: nGT 4, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.095893, y 0.072371, w 0.545606, h 0.231250, conf 14.665127, cls 2.279641, total 17.889889
+153: nGT 31, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.011494, loss: x 0.107136, y 0.081973, w 0.353547, h 0.208152, conf 4.701206, cls 2.098871, total 7.550885
+156: nGT 6, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.222222, loss: x 0.070597, y 0.051806, w 0.413021, h 0.335938, conf 4.797866, cls 1.969623, total 7.638850
+159: nGT 19, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.140351, loss: x 0.087122, y 0.126944, w 0.191487, h 0.957553, conf 4.485434, cls 1.971397, total 7.819938
+162: nGT 14, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.024390, loss: x 0.090720, y 0.086618, w 0.280628, h 0.135121, conf 6.403702, cls 1.946935, total 8.943724
+165: nGT 3, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.111111, loss: x 0.099201, y 0.104057, w 0.276436, h 0.471121, conf 5.337194, cls 2.000115, total 8.288124
+168: nGT 52, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.147436, loss: x 0.085248, y 0.079974, w 0.141446, h 0.185132, conf 4.261778, cls 1.996258, total 6.749836
+171: nGT 5, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.000000, loss: x 0.082755, y 0.046931, w 0.316653, h 1.001521, conf 4.776389, cls 2.080822, total 8.305071
+174: nGT 31, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.252747, loss: x 0.079199, y 0.102170, w 0.077897, h 0.525687, conf 4.593915, cls 1.939010, total 7.317878
+177: nGT 13, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.358974, loss: x 0.078144, y 0.063639, w 0.091185, h 0.066484, conf 4.339324, cls 1.958904, total 6.597680
+180: nGT 6, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.222222, loss: x 0.103795, y 0.055921, w 0.751642, h 0.215368, conf 5.145462, cls 2.028903, total 8.301091
+183: nGT 13, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.052632, loss: x 0.083089, y 0.071215, w 0.585755, h 1.157467, conf 4.415742, cls 2.149070, total 8.462338
+186: nGT 16, precision 0.000000, recall50 0.000000, recall75 0.000000, cls_acc 0.170213, loss: x 0.102855, y 0.075509, w 0.314150, h 0.727299, conf 4.894054, cls 1.989844, total 8.103712

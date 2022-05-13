@@ -143,6 +143,9 @@ class MyWindow(QtWidgets.QMainWindow):
         super(MyWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        
+        self.TrainThreadClass = TrainThreadMocked
+        # self.TrainThreadClass = TrainThread
 
         # 辅助变量
         self.python_path = self.ui.le_python_path_pretrain.text
@@ -158,11 +161,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.init_config_tab()
         # 训练面板
         self.init_train_tab()
-
         # 目标检测
-        self.open_image(
-            self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
-        )
+        self.init_objdet_tab()
 
     def init_train_tab(self):
         "训练面板的初始化"
@@ -233,13 +233,6 @@ class MyWindow(QtWidgets.QMainWindow):
             directory=self.model_dir(),
         )
 
-    def update_plot(self):
-        t = np.linspace(0, 20, 200)
-        loss = np.exp(-t)
-        metrics = np.exp(t)
-        self.plt_loss.plot(t, loss, pen="b", name="loss")
-        self.plt_metrics.plot(t, metrics, pen="r", name="ACC")
-
     def init_train_tab_plot(self):
         "初始化绘图面板"
         # 白色背景，黑色前景。
@@ -273,6 +266,11 @@ class MyWindow(QtWidgets.QMainWindow):
         self.plt_metrics: PlotDataItem = plt_metrics.plot(name='acc')
         self.loss_list = []
         self.metrics_list = []
+
+    def init_objdet_tab(self):
+        self.open_image(
+            self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
+        )
 
     def train_mode(self):
         "训练模式的enum值"
@@ -337,7 +335,7 @@ class MyWindow(QtWidgets.QMainWindow):
         # 如果线程没有启动，那么UI就维持不变。
         cmd = self.command_for_train_mode()
         assert self.train_thread is None, '残留的训练线程'
-        self.train_thread = TrainThreadMocked(cmd=cmd, cwd=self.project_dir())
+        self.train_thread = self.TrainThreadClass(cmd=cmd, cwd=self.project_dir())
         self.train_thread.train_start_signal.connect(self.handle_train_start)
         self.train_thread.train_step_signal.connect(self.handle_train_step)
         self.train_thread.train_end_signal.connect(self.handle_train_end)
@@ -389,7 +387,7 @@ class MyWindow(QtWidgets.QMainWindow):
         # 此时UI已经准备好接收线程的日志。
 
     def is_mocked(self):
-        return isinstance(self.train_thread, TrainThreadMocked)
+        return TrainThreadMocked == self.TrainThreadClass
 
     def handle_train_step(self, line: str):
         "训练线程：发来一行训练日志"
@@ -404,6 +402,8 @@ class MyWindow(QtWidgets.QMainWindow):
             # 日志要同步打到console
             epoch = int(epoch)
             self.console.append(f'epoch {epoch:04d} loss {loss:.4f} acc {acc*100:.2f}')
+        else:
+            
 
     def handle_train_interrupt(self):
         "训练线程：已经收到interrupt信号，run返回。"
