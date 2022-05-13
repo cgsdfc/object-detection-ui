@@ -1,33 +1,37 @@
-from Ui_develop import *
+import time
 import sys
+import subprocess
+import signal
+import shlex
+import random
+import pyqtgraph as pg
+import os
+import numpy as np
+import enum
+import psutil
+
+from Ui_develop import *
+from pyqtgraph import PlotDataItem, PlotItem
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit, QLabel
 from PyQt5.QtCore import QThread, pyqtSignal
-import pyqtgraph as pg
-from pyqtgraph import PlotDataItem, PlotItem
+from pathlib import Path
 from collections import defaultdict
 
-import os
-from pathlib import Path
-import shlex
-import enum
-import time
-
 # import numpy as np
-import random
-import numpy as np
-import subprocess
 
 
 CODES_DIR = "/home/liao/codes"
 
 # PYTHON_INTERPRETER = "/home/liao/anaconda3/envs/python27/bin/python"
 
+
 class StringConstants:
-    precision = 'precision'
-    recall = 'recall'
-    recall50 = 'recall50'
-    total = 'total'
-    loss = 'loss'
+    precision = "precision"
+    recall = "recall"
+    recall50 = "recall50"
+    total = "total"
+    loss = "loss"
+
 
 class LoglineParseResult:
     precision = None
@@ -48,6 +52,7 @@ METRICS_MAP = {
     StringConstants.recall: StringConstants.recall50,
     StringConstants.precision: StringConstants.precision,
 }
+
 
 def parse_logline(line: str, map=None):
     line = line.split(", ")
@@ -143,17 +148,34 @@ class TrainThread(TrainThreadBase):
         if not self.isInterruptionRequested():
             return False
         if self.p is not None:
-            print(f'正在杀死进程：{self.p.pid}')
+            print(f"正在杀死进程：{self.p.pid}")
             try:
+                self.p.kill()
                 self.p.terminate()
-                self.p.wait()
+                self.kill_all_train_processes()
             except Exception as e:
                 print(f"杀死进程时抛出异常：{e}")
             else:
-                print(f'进程杀死成功')
+                print(f"进程杀死成功")
 
         self.train_interrupt_signal.emit()
         return True
+
+    def python_path(self):
+        return self.cmd[0]
+
+    def kill_all_train_processes(self):
+        to_kill: list[psutil.Process] = []
+
+        for p in psutil.process_iter():
+            if p.exe() == self.python_path() and p.cwd() == self.cwd:
+                cmdline = " ".join(p.cmdline())[:40]
+                print(f"发现残留进程：{p.pid()} {cmdline}")
+                to_kill.append(p)
+
+        for p in to_kill:
+            print(f"杀死进程 {p.pid}")
+            os.kill(p.pid, signal.SIGKILL)
 
     def run(self):
         try:
@@ -299,7 +321,7 @@ class MyWindow(QtWidgets.QMainWindow):
         layout = self.ui.graph_layout
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(win)
-        
+
         plt_loss: PlotItem = win.addPlot(title="损失函数")
         # plt_loss = win.addPlot()
         # plt_loss.setLabel("left", text="loss")  # y轴设置函数
@@ -328,12 +350,14 @@ class MyWindow(QtWidgets.QMainWindow):
             self.plt: dict[str, PlotDataItem] = {
                 StringConstants.loss: plt_loss.plot(name=StringConstants.loss),
                 StringConstants.recall: plt_metrics.plot(name=StringConstants.recall),
-                StringConstants.precision: plt_metrics.plot(name=StringConstants.precision),
+                StringConstants.precision: plt_metrics.plot(
+                    name=StringConstants.precision
+                ),
             }
             self.plt_pen: dict[str, str] = {
-                StringConstants.loss: 'b',
-                StringConstants.recall: 'r',
-                StringConstants.precision: 'g',
+                StringConstants.loss: "b",
+                StringConstants.recall: "r",
+                StringConstants.precision: "g",
             }
             self.plt_data: dict[str, list] = defaultdict(list)
             self.plt_keys = self.plt.keys
@@ -452,7 +476,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.console.append("配置文件如下：")
         for name, value in self.get_config_paths().items():
             self.console.append(f"{name}：{value}")
-        self.console.append(f'训练命令：{self.train_thread.cmd}')
+        self.console.append(f"训练命令：{self.train_thread.cmd}")
         self.console.append("正在加载模型和数据集，请等待。")
         self.run_progress_bar(total_steps=5, step_time=0.1)
         self.console.append("加载完成，训练已启动。")
@@ -480,11 +504,10 @@ class MyWindow(QtWidgets.QMainWindow):
             if "nGT" not in line:
                 return
             data = parse_logline(line, METRICS_MAP)
-            print(f'解析后的数据：{data}')
+            print(f"解析后的数据：{data}")
             for key in self.plt_keys():
                 self.plt_data[key].append(data[key])
                 self.plt[key].setData(self.plt_data[key], pen=self.plt_pen[key])
-
 
     def handle_train_interrupt(self):
         "训练线程：已经收到interrupt信号，run返回。"
