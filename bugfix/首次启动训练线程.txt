@@ -1,0 +1,19 @@
+当前训练模式：预训练
+配置文件如下：
+解析器路径：/home/liao/anaconda3/envs/python27/bin/python
+重加权网络配置：cfg/reweighting_net.cfg
+主干网络配置：cfg/darknet_yolov3_spp.cfg
+预训练数据配置：cfg/fewyolov3_nwpu.data
+小样本微调数据配置： cfg/fewtunev3_nwpu_10shot.data
+小样本微调预训练模型路径：/home/liao/codes/FSODM/backup/metayolov3_nwpu_300_200_novel0_neg1/000260.weights
+正在加载模型和数据集，请等待。
+加载完成，训练已启动。
+Traceback (most recent call last):
+File "train.py", line 30, in <module>
+data_options = read_data_cfg(datacfg)
+File "/home/liao/codes/FSODM/utils.py", line 709, in read_data_cfg
+with open(datacfg, 'r') as fp:
+IOError: [Errno 2] No such file or directory: 'cfg/fewtunev3_nwpu_10shot.data'
+----------
+训练结束
+训练进程返回值：1
