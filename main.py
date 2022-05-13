@@ -3,6 +3,7 @@ import sys
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit, QLabel
 from PyQt5.QtCore import QThread, pyqtSignal
 import pyqtgraph as pg
+from pyqtgraph import PlotDataItem
 
 import os
 from pathlib import Path
@@ -42,24 +43,40 @@ class EmittingStream(QtCore.QObject):
     def write(self, text):
         self.textWritten.emit(str(text))
 
-
-def _decode_data(byte_data: bytes):
-    """
-    解码数据
-    :param byte_data: 待解码数据
-    :return: 解码字符串
-    """
-    try:
-        return byte_data.decode("UTF-8")
-    except UnicodeDecodeError:
-        return byte_data.decode("GB18030")
-
-
-class TrainThread(QThread):
+class TrainThreadBase(QThread):
     train_start_signal = pyqtSignal(bool)
     train_step_signal = pyqtSignal(str)
     train_end_signal = pyqtSignal(int)
     train_interrupt_signal = pyqtSignal()
+
+
+class TrainThreadMocked(TrainThreadBase):
+
+    def __init__(self, cmd: list, cwd: str) -> None:
+        super().__init__()
+        self.epochs = 20
+
+    def run(self):
+        print('训练线程启动')
+        self.train_start_signal.emit(True)
+
+        for epoch in range(self.epochs):
+            if self.isInterruptionRequested():
+                print(f'调用方请求中断')
+                self.train_interrupt_signal.emit()
+                return
+            self.msleep(1000)
+            acc = random.random()
+            loss = np.exp(-epoch)
+            line = f'{loss} {acc}'
+            print('训练线程发送日志')
+            self.train_step_signal.emit(line)
+        
+        print('训练线程结束')
+        self.train_end_signal.emit(0)
+
+
+class TrainThread(TrainThreadBase):
 
     def __init__(self, cmd: list, cwd: str) -> None:
         super().__init__()
@@ -68,12 +85,27 @@ class TrainThread(QThread):
         self.cmd = cmd
         assert os.path.isdir(cwd)
         self.cwd = cwd
+        self.p: subprocess.Popen = None # 进程实例
+
+    def handle_interrupt(self):
+        "调用方向我发起中断请求。"
+        if not self.isInterruptionRequested():
+            return False
+        if self.p is not None:
+            try:
+                self.p.terminate()
+                self.p.wait()
+            except Exception as e:
+                print(f'杀死进程时抛出异常：{e}')
+
+        self.train_interrupt_signal.emit()
+        return True
 
     def run(self):
         try:
             p = subprocess.Popen(
                 self.cmd,
-                shell=True,
+                shell=False, # shell=True 则cmd可以是str，否则必须是list
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 cwd=self.cwd,
@@ -87,9 +119,10 @@ class TrainThread(QThread):
         finally:
             self.train_start_signal.emit(start_ok)
 
+        self.handle_interrupt()
+
         while p.poll() is None:
-            if self.isInterruptionRequested():
-                self.train_interrupt_signal.emit()
+            if self.handle_interrupt():
                 return
             line = p.stdout.readline().strip()
             if line:
@@ -100,10 +133,7 @@ class TrainThread(QThread):
             # sys.stderr.flush()
 
         # 判断返回码状态
-        if p.returncode == 0:
-            print("\033[1;32m************** SUCCESS **************\033[0m")
-        else:
-            print("\033[1;31m************** FAILED **************\033[0m")
+        print(f'训练线程：进程返回值：{p.returncode}')
         self.train_end_signal.emit(p.returncode)
 
 
@@ -210,7 +240,8 @@ class MyWindow(QtWidgets.QMainWindow):
         self.plt_metrics.plot(t, metrics, pen="r", name="ACC")
 
     def init_train_tab_plot(self):
-        # pg.setConfigOption(antialias=True)
+        "初始化绘图面板"
+        # 白色背景，黑色前景。
         pg.setConfigOption("background", "#FFFFFF")
         pg.setConfigOption("foreground", "k")
 
@@ -236,15 +267,17 @@ class MyWindow(QtWidgets.QMainWindow):
         # plt_metrics.setLabel("bottom", text="epoch")  # x轴设置函数
         plt_metrics.addLegend()  # 可选择是否添加legend
 
-        self.plt_loss = plt_loss
-        self.plt_metrics = plt_metrics
+        self.plt_loss: PlotDataItem = plt_loss.plot()
+        self.plt_metrics: PlotDataItem = plt_metrics.plot()
+        self.loss_list = []
+        self.metrics_list = []
 
     def train_mode(self):
         "训练模式的enum值"
         return TEXT_TO_TRAIN_MODE[self.train_mode_raw()]
 
     def get_config_dict(self) -> dict:
-        "获取当前配置字典"
+        "辅助函数：获取当前配置字典"
         config_dict = {}
         config_dict.setdefault("解析器路径", self.python_path())
         config_dict.setdefault("重加权网络配置", self.reweight_config())
@@ -290,7 +323,7 @@ class MyWindow(QtWidgets.QMainWindow):
         return cmd
 
     def train_start(self):
-        "用户要开始训练，启动训练进程"
+        "用户：要开始训练，启动训练进程"
         if self.is_training:
             print("已经有训练进程了，无法开始")
             QMessageBox.warning(self, "警告", "已经有一个训练进程正在运行，请等待当前训练完成，或点击终止以停止当前训练。")
@@ -298,65 +331,20 @@ class MyWindow(QtWidgets.QMainWindow):
         if not self.check_config():
             print("配置非法，训练无法开始")
             return
-
+        # 这里只是拉起训练线程，UI的更新要到线程反馈了才进行。
+        # 如果线程没有启动，那么UI就维持不变。
         cmd = self.command_for_train_mode()
         assert self.train_thread is None, '残留的训练线程'
-        self.train_thread = TrainThread(cmd)
+        self.train_thread = TrainThreadMocked(cmd=cmd, cwd=self.project_dir())
         self.train_thread.train_start_signal.connect(self.handle_train_start)
         self.train_thread.train_step_signal.connect(self.handle_train_step)
         self.train_thread.train_end_signal.connect(self.handle_train_end)
         self.train_thread.train_interrupt_signal.connect(self.handle_train_interrupt)
         self.train_thread.start()
-
-    def handle_train_start(self, start_ok: bool):
-        "线程启动进程，成功或者失败"
-        if not start_ok:
-            QMessageBox.warning(self, "警告", "训练进程启动失败，请检查配置。")
-            return
-        self.console.clear()
-        self.console.append(f"当前训练模式：{self.train_mode_raw()}")
-        self.console.append("配置文件如下：")
-        for name, value in self.get_config_dict().items():
-            self.console.append(f"{name}：{value}")
-        self.console.append("正在加载模型和数据集，请等待。")
-        self.run_progress_bar(total_steps=5, step_time=0.1)
-        self.console.append("加载完成，训练已启动。")
-        self.is_training = True
-        self.clear_plot()
-
-    def handle_train_step(self, line: str):
-        "线程发来一行训练日志"
-        pass
-
-    def handle_train_interrupt(self):
-        "线程已经收到interrupt信号，run返回。"
-        self.stop_train_thread()
-        self.run_progress_bar(4, 0.1)
-        self.console.append("-" * 10)
-        self.console.append("训练进程已终止。")
-        self.is_training = False
-        print("训练进程已结束")
-
-    def stop_train_thread(self):
-        "将训练线程完全关闭，释放内存"
-        t = self.train_thread
-        if t is None:
-            return
-        t.quit()
-        t.wait()
-        t.deleteLater()
-        self.train_thread = None
-
-    def handle_train_end(self, returncode: int):
-        "训练进程已经退出了。"
-        self.console.append("-" * 10)
-        self.console.append(f"训练进程返回值：{returncode}")
-        self.stop_train_thread()
-        if returncode:
-            QMessageBox.warning(self, "警告", "训练进程异常退出，请检查配置。")
+        print('训练线程启动')
 
     def train_stop(self):
-        "响应用户要终止训练进程"
+        "用户：要终止训练进程"
         if not self.is_training:
             print("当前没有训练进程")
             return
@@ -374,10 +362,73 @@ class MyWindow(QtWidgets.QMainWindow):
         assert self.train_thread is not None
         self.train_thread.requestInterruption()
         # 等待线程发来 interrupt 信号。
+        
+    def handle_train_start(self, start_ok: bool):
+        "训练线程：启动进程，成功或者失败"
+        if not start_ok:
+            print('训练线程启动失败')
+            QMessageBox.warning(self, "警告", "训练进程启动失败，请检查配置。")
+            return
+
+        print('训练线程启动成功，刷新UI')
+        self.clear_plot() # 刷新绘图有关的变量。
+        self.console.clear()
+        self.console.append(f"当前训练模式：{self.train_mode_raw()}")
+        self.console.append("配置文件如下：")
+        for name, value in self.get_config_dict().items():
+            self.console.append(f"{name}：{value}")
+        self.console.append("正在加载模型和数据集，请等待。")
+        self.run_progress_bar(total_steps=5, step_time=0.1)
+        self.console.append("加载完成，训练已启动。")
+        self.is_training = True
+        # 此时UI已经准备好接收线程的日志。
+
+    def handle_train_step(self, line: str):
+        "训练线程：发来一行训练日志"
+        print(f'UI 收到一行训练日志：{line}')
+        loss, acc = map(float, line.split())
+        # 解析日志，更新绘图。
+        self.loss_list.append(loss)
+        self.metrics_list.append(acc)
+        self.plt_loss.setData(self.loss_list, pen='b')
+        self.plt_metrics.setData(self.metrics_list, pen='r')
+
+    def handle_train_interrupt(self):
+        "训练线程：已经收到interrupt信号，run返回。"
+        print('线程被中断，已经退出，善后处理')
+        self.stop_train_thread()
+        self.run_progress_bar(4, 0.1)
+        self.console.append("-" * 10)
+        self.console.append("训练进程已终止。")
+        print("训练进程已结束")
+
+    def handle_train_end(self, returncode: int):
+        "训练线程：训练进程已经退出了。"
+        print(f'线程正常退出，进程返回值：{returncode}')
+        self.stop_train_thread()
+        self.console.append("-" * 10)
+        self.console.append(f"训练进程返回值：{returncode}")
+        if returncode:
+            QMessageBox.warning(self, "警告", "训练进程异常退出，请检查配置。")
+
+    def stop_train_thread(self):
+        "辅助函数：将训练线程完全关闭，释放内存"
+        t = self.train_thread
+        if t is None:
+            assert not self.is_training
+            return
+        t.quit()
+        t.wait()
+        t.deleteLater()
+        self.train_thread = None
+        self.is_training = False
 
     def clear_plot(self):
+        "辅助函数：清空绘图有关的变量"
         self.plt_loss.clear()
         self.plt_metrics.clear()
+        self.loss_list.clear()
+        self.metrics_list.clear()
 
     def run_progress_bar(self, total_steps, step_time):
         self.ui.progressBar_train.reset()
