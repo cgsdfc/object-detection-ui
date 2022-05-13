@@ -143,18 +143,22 @@ class TrainThread(TrainThreadBase):
         if not self.isInterruptionRequested():
             return False
         if self.p is not None:
+            print(f'正在杀死进程：{self.p.pid}')
             try:
                 self.p.terminate()
                 self.p.wait()
             except Exception as e:
                 print(f"杀死进程时抛出异常：{e}")
+            else:
+                print(f'进程杀死成功')
 
         self.train_interrupt_signal.emit()
         return True
 
     def run(self):
         try:
-            p = subprocess.Popen(
+            # 注意，必须把p赋值给self，否则无法杀死进程。
+            self.p = p = subprocess.Popen(
                 self.cmd,
                 shell=False,  # shell=True 则cmd可以是str，否则必须是list
                 stdout=subprocess.PIPE,

@@ -1269,7 +1269,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab_4">
      <attribute name="title">
@@ -2206,7 +2206,7 @@
                      <string notr="true">background-color: rgb(207, 207, 207);</string>
                     </property>
                     <property name="text">
-                     <string> cfg/fewtunev3_nwpu_10shot.data</string>
+                     <string>cfg/fewtune_nwpu_10shot.data</string>
                     </property>
                    </widget>
                   </item>
@@ -2230,7 +2230,7 @@
                      <string notr="true">background-color: rgb(207, 207, 207);</string>
                     </property>
                     <property name="text">
-                     <string>/home/liao/codes/FSODM/backup/metayolov3_nwpu_300_200_novel0_neg1/000260.weights</string>
+                     <string>backup/metayolov3_nwpu_300_200_novel0_neg1/000400.weights</string>
                     </property>
                    </widget>
                   </item>
@@ -4119,7 +4119,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -5195,12 +5195,9 @@
        </item>
       </layout>
      </widget>
+     <zorder>layoutWidget</zorder>
      <zorder>tabWidget</zorder>
      <zorder>layoutWidget</zorder>
-     <zorder>pb_train_stop</zorder>
-     <zorder>pb_train_start</zorder>
-     <zorder>pb_train_stop</zorder>
-     <zorder>tabWidget_3</zorder>
     </widget>
     <widget class="QWidget" name="tab_12">
      <attribute name="title">
