@@ -241,7 +241,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.fewtune_model_path = self.ui.le_model_path_fewtune.text
         self.console = self.ui.te_train_logging
         self.train_mode_raw = self.ui.comboBox_train_mode.currentText
-        self.update_interval = self.ui.#
+        # self.update_interval = self.ui.#
 
         # 配置面板
         self.init_config_tab()
