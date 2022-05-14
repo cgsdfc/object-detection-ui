@@ -17,6 +17,7 @@ from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import QThread, pyqtSignal
 from pathlib import Path
 from collections import defaultdict
+from pathlib import Path as P
 
 # import numpy as np
 
@@ -24,6 +25,8 @@ from collections import defaultdict
 CODES_DIR = "/home/liao/codes"
 
 # PYTHON_INTERPRETER = "/home/liao/anaconda3/envs/python27/bin/python"
+
+MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/FSODM/vis/results")
 
 
 class StringConstants:
@@ -386,10 +389,80 @@ class MyWindow(QtWidgets.QMainWindow):
             self.plt_keys = self.plt.keys
 
     def init_objdet_tab(self):
-        self.open_image(
+        self.is_mocked_objdet = True
+        self.init_open_image_single(
             self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
         )
+        self.input_image_path = None
         self.ui.progressBar_objdet.reset()
+        self.ui.pb_objdet_detect.clicked.connect(self.run_object_detection)
+
+    def run_object_detection(self):
+        "单图目标检测"
+        # 没有输入图像。
+        if self.input_image_path is None:
+            QMessageBox.warning(self, "错误", "必须先打开一张输入图像")
+            return
+        # 已有输出图像。
+        if self.output_image_path is not None:
+            reply = QMessageBox.question(
+                self,
+                "提示",
+                "输入图像已处理完毕，是否重新检测？",
+                QMessageBox.Yes | QMessageBox.Cancel,
+                QMessageBox.Cancel,
+            )
+            if reply == QMessageBox.Cancel:
+                return
+            print(f'用户要求重新检测')
+            self.output_image_path = None
+
+        assert os.path.isfile(self.input_image_path) and self.output_image_path is None
+        input_image_path = P(self.input_image_path)
+        print(f"目标识别中：{input_image_path}")
+        self.run_progress_bar(self.ui.progressBar_objdet)
+
+        if self.is_mocked_objdet:
+            output_image_path = MOCKED_IMAGE_RESULT_DIR.joinpath(input_image_path.name)
+            if not output_image_path.exists():
+                QMessageBox.warning(self, "警告", "输出图像文件不存在")
+                print(f"文件不存在：{output_image_path}")
+                return
+            output_image_path = str(output_image_path)
+            self.show_image(output_image_path, self.ui.lb_objdet_output)
+            self.output_image_path = output_image_path
+            print(f"目标检测结果已经展示：{output_image_path}")
+        else:
+            pass
+
+    def show_image(self, image_path, label: QLabel):
+        "将一个图片路径显示到label上面"
+        image = QtGui.QPixmap(image_path).scaled(label.width(), label.height())
+        if image.isNull():
+            return False
+        label.setPixmap(image)
+        return True
+
+    def init_open_image_single(
+        self, button: QPushButton, label: QLabel, directory=None
+    ):
+        "单图识别：打开一张图像"
+
+        def open_show_image():
+            image_file, _ = QFileDialog.getOpenFileName(
+                self, "打开图像", directory=directory, filter="*.jpg;;*.jpeg;;"
+            )
+            if not image_file:
+                print("用户没有任何输入")
+                return
+            if not self.show_image(image_file, label):
+                QMessageBox.warning(self, "错误", f"文件{image_file}不是合法的图像格式。")
+                return
+            print(f"图像展示成功：{image_file}")
+            self.input_image_path = image_file
+            self.output_image_path = None  # 这是结果。
+
+        button.clicked.connect(open_show_image)
 
     def init_batchdet_tab(self):
         self.ui.progressBar_batchdet.reset()
@@ -504,13 +577,14 @@ class MyWindow(QtWidgets.QMainWindow):
             self.console.append(f"{name}：{value}")
         self.console.append(f"训练命令：{self.train_thread.cmd}")
         self.console.append("正在加载模型和数据集，请等待。")
-        self.run_progress_bar(total_steps=5, step_time=0.1)
+        self.run_progress_bar(self.ui.progressBar_train)
         self.console.append("加载完成，训练已启动。")
         self.is_training = True
         self.epoch = 0
         # 此时UI已经准备好接收线程的日志。
 
     def is_mocked(self):
+        "训练面板 Mocked"
         return TrainThreadMocked == self.TrainThreadClass
 
     def handle_train_step(self, line: str):
@@ -543,7 +617,7 @@ class MyWindow(QtWidgets.QMainWindow):
         "训练线程：已经收到interrupt信号，run返回。"
         print("线程被中断，已经退出，善后处理")
         self.stop_train_thread()
-        self.run_progress_bar(4, 0.1)
+        self.run_progress_bar(self.ui.progressBar_train)
         self.console.append("-" * 10)
         self.console.append("训练进程已终止。")
         print("训练进程已结束")
@@ -582,14 +656,14 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.plt[key].clear()
                 self.plt_data[key].clear()
 
-    def run_progress_bar(self, total_steps, step_time):
-        self.ui.progressBar_train.reset()
-        self.ui.progressBar_train.setRange(0, total_steps)
+    def run_progress_bar(self, progress_bar, total_steps=5, step_time=0.1):
+        progress_bar.reset()
+        progress_bar.setRange(0, total_steps)
         for step in range(total_steps):
             sleep_time = random.gauss(mu=step_time, sigma=step_time / 10)
             time.sleep(sleep_time)
-            self.ui.progressBar_train.setValue(step + 1)
-        self.ui.progressBar_train.reset()
+            progress_bar.setValue(step + 1)
+        progress_bar.reset()
 
     def check_config(self):
         "检查一切路径不为空，不空则肯定是存在的。"
@@ -607,28 +681,6 @@ class MyWindow(QtWidgets.QMainWindow):
             check_filepath(name, value)
 
         return ok
-
-    def put_image(self, image_path, label: QLabel):
-        "将一个图片路径显示到label上面"
-        image = QtGui.QPixmap(image_path).scaled(label.width(), label.height())
-        if image.isNull():
-            return False
-        label.setPixmap(image)
-        return True
-
-    def open_image(self, button: QPushButton, label: QLabel, directory=None):
-        def open_show_image():
-            value, _ = QFileDialog.getOpenFileName(
-                self, "打开图像", directory=directory, filter="*.jpg;;*.jpeg;;"
-            )
-            if not value:
-                print("用户没有任何输入")
-                return
-            if not self.put_image(value, label):
-                QMessageBox.warning(self, "错误", f"文件{value}不是合法的图像格式。")
-                return
-
-        button.clicked.connect(open_show_image)
 
     def project_dir(self):
         value = self.ui.le_project_path.text()
