@@ -2582,7 +2582,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget_config.setCurrentIndex(3)
+        self.tabWidget_config.setCurrentIndex(0)
         self.tabWidget_arch_config.setCurrentIndex(0)
         self.tabWidget_fewtune_config.setCurrentIndex(0)
         self.tabWidget_basic_config.setCurrentIndex(0)

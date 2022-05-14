@@ -422,7 +422,7 @@ class MyWindow(QtWidgets.QMainWindow):
         "多图识别：初始化"
         self.ui.progressBar_batchdet.reset()
         self.ui.pb_batchdet_open.clicked.connect(self.open_batchdet)
-        self.ui.pb_batchdet_detect.clicked.connect(self.run_batchdet)
+        self.ui.pb_batchdet_detect.clicked.connect(self.detect_batchdet)
         self.ui.pb_batchdet_export.clicked.connect(self.export_batchdet)
         self.ui.pb_batchdet_clear.clicked.connect(self.clear_batchdet)
         NUM_BATCH = 8
@@ -485,7 +485,11 @@ class MyWindow(QtWidgets.QMainWindow):
             print(f"未实现")
             return None
 
-    def run_batchdet(self):
+    def detect_batchdet(self):
+        if not self.total_input_images_batchdet():
+            QMessageBox.warning(self, "错误", "输入图像为空，请打开图像文件进行检测")
+            return
+
         total = 0
         for i, panel in enumerate(self.image_panel_list):
             if panel.input_image is None:
@@ -520,7 +524,6 @@ class MyWindow(QtWidgets.QMainWindow):
 
         for i, panel in enumerate(self.image_panel_list):
             if panel.output_image is None:
-                # print(f"面板{i} 没有输出图像")
                 continue
             output_image = P(panel.output_image)
             output_file = output_dir.joinpath(output_image.name)
@@ -530,6 +533,7 @@ class MyWindow(QtWidgets.QMainWindow):
                 dst_file=output_file,
                 progress_bar=self.ui.progressBar_batchdet,
             )
+        print(f'导出完成：{total}')
 
     def clear_batchdet(self):
         print(f"重置所有输入输出图像")
@@ -578,6 +582,7 @@ class MyWindow(QtWidgets.QMainWindow):
             dst_file=output_file,
             progress_bar=self.ui.progressBar_objdet,
         )
+        print(f'导出完成')
 
     def export_file(self, src_file: P, dst_file: P, progress_bar: QProgressBar):
         "辅助函数：文件导出"

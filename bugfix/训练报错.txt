@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+File "train.py", line 219, in <module>
+train(epoch)
+File "train.py", line 182, in train
+loss = region_loss(output, target)
+File "/home/liao/anaconda3/envs/python27/lib/python2.7/site-packages/torch/nn/modules/module.py", line 357, in __call__
+result = self.forward(*input, **kwargs)
+File "/home/liao/codes/FSODM/region_loss.py", line 352, in forward
+self.thresh)
+File "/home/liao/codes/FSODM/region_loss.py", line 79, in build_targets
+gx = (tboxes[:, 1] * feature_size[1]).float()
+IndexError: trying to index 2 dimensions of a 0 dimensional tensor
