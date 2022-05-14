@@ -237,7 +237,7 @@ class ObjdetImagePanel:
 
     def clear(self):
         self.label.clear()
-        self.input_image=self.output_image=None
+        self.input_image = self.output_image = None
 
 
 class MyWindow(QtWidgets.QMainWindow):
@@ -423,9 +423,31 @@ class MyWindow(QtWidgets.QMainWindow):
             getattr(self.ui, f"X{i+1}") for i in range(NUM_BATCH)
         ]
         self.image_panel_list = list(map(ObjdetImagePanel, label_list))
+        self.NUM_BATCH = NUM_BATCH
 
     def open_batchdet(self):
-        pass
+        file_list, _ = QFileDialog.getOpenFileNames(
+            self,
+            f"请选择最多{self.NUM_BATCH}张图片",
+            directory=self.image_dir(),
+            filter="*.jpg;;*.jpeg",
+        )
+        if not file_list:
+            print("用户没有选择任何文件")
+            return
+        if len(file_list) > self.NUM_BATCH:
+            QMessageBox.warning(
+                self, "警告", f"批量识别一次只能识别最多{self.NUM_BATCH}张图像，请重新选择图像",
+            )
+            return
+        print(f'用户输入了{len(file_list)} 个文件')
+
+        for i, input_image in enumerate(file_list):
+            panel = self.image_panel_list[i]
+            panel.input_image = input_image
+            panel.output_image = None
+            print(f'展示图像：{input_image}')
+            self.show_image(input_image, panel.label)
 
     def run_batchdet(self):
         pass
@@ -450,7 +472,7 @@ class MyWindow(QtWidgets.QMainWindow):
             return
         print(f"图像展示成功：{image_file}")
         self.input_image_path = image_file
-        self.output_image_path = None # 旧的识别结果作废了。
+        self.output_image_path = None  # 旧的识别结果作废了。
 
     def clear_objdet(self):
         "单图检测：清空"
