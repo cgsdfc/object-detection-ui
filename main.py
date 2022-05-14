@@ -399,6 +399,16 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.pb_objdet_export.clicked.connect(self.export_objdet_single)
         self.ui.pb_objdet_clear.clicked.connect(self.clear_objdet_single)
 
+    def init_batchdet_tab(self):
+        self.ui.progressBar_batchdet.reset()
+        self.ui.pb_batchdet_detect.clicked.connect(self.run_objdet_batch)
+        self.ui.pb_batchdet_export.clicked.connect(self.export_objdet_batch)
+        self.ui.pb_batchdet_clear.clicked.connect(self.clear_objdet_batch)
+
+    def run_objdet_batch(self): pass
+    def export_objdet_batch(self): pass
+    def clear_objdet_batch(self): pass
+
     def clear_objdet_single(self):
         "单图检测：清空"
         self.ui.lb_objdet_input.clear()
@@ -514,8 +524,6 @@ class MyWindow(QtWidgets.QMainWindow):
 
         button.clicked.connect(open_show_image)
 
-    def init_batchdet_tab(self):
-        self.ui.progressBar_batchdet.reset()
 
     def train_mode(self):
         "训练模式的enum值"
