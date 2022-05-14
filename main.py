@@ -217,9 +217,6 @@ class TrainThread(TrainThreadBase):
             if line:
                 line = line.decode()
                 self.train_step_signal.emit(line)
-            # 清空缓存
-            # sys.stdout.flush()
-            # sys.stderr.flush()
 
         # 判断返回码状态
         print(f"训练线程：进程返回值：{p.returncode}")
@@ -244,6 +241,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.fewtune_model_path = self.ui.le_model_path_fewtune.text
         self.console = self.ui.te_train_logging
         self.train_mode_raw = self.ui.comboBox_train_mode.currentText
+        self.update_interval = self.ui.#
 
         # 配置面板
         self.init_config_tab()
@@ -513,6 +511,8 @@ class MyWindow(QtWidgets.QMainWindow):
         else:
             self.console.append(line)
             if "nGT" not in line:
+                return
+            if (1+self.epoch) % self.update_interval() != 0: # 没到更新周期。
                 return
             data = parse_logline(line, METRICS_MAP)
             print(f"解析后的数据：{data}")
