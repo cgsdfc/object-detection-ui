@@ -6952,9 +6952,6 @@
               <property name="text">
                <string/>
               </property>
-              <property name="pixmap">
-               <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
-              </property>
               <property name="scaledContents">
                <bool>true</bool>
               </property>
@@ -6973,9 +6970,6 @@
               </property>
               <property name="text">
                <string/>
-              </property>
-              <property name="pixmap">
-               <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
@@ -6996,9 +6990,6 @@
               <property name="text">
                <string/>
               </property>
-              <property name="pixmap">
-               <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
-              </property>
               <property name="scaledContents">
                <bool>true</bool>
               </property>
@@ -7017,9 +7008,6 @@
               </property>
               <property name="text">
                <string/>
-              </property>
-              <property name="pixmap">
-               <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
@@ -7040,9 +7028,6 @@
               <property name="text">
                <string/>
               </property>
-              <property name="pixmap">
-               <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
-              </property>
               <property name="scaledContents">
                <bool>true</bool>
               </property>
@@ -7061,9 +7046,6 @@
               </property>
               <property name="text">
                <string/>
-              </property>
-              <property name="pixmap">
-               <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
@@ -7084,9 +7066,6 @@
               <property name="text">
                <string/>
               </property>
-              <property name="pixmap">
-               <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
-              </property>
               <property name="scaledContents">
                <bool>true</bool>
               </property>
@@ -7105,9 +7084,6 @@
               </property>
               <property name="text">
                <string/>
-              </property>
-              <property name="pixmap">
-               <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
