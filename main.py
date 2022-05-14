@@ -229,6 +229,17 @@ class TrainThread(TrainThreadBase):
         self.train_end_signal.emit(p.returncode)
 
 
+class ObjdetImagePanel:
+    def __init__(self, label: QLabel) -> None:
+        self.label = label
+        self.input_image = None
+        self.output_image = None
+
+    def clear(self):
+        self.label.clear()
+        self.input_image=self.output_image=None
+
+
 class MyWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MyWindow, self).__init__()
@@ -389,35 +400,66 @@ class MyWindow(QtWidgets.QMainWindow):
             self.plt_keys = self.plt.keys
 
     def init_objdet_tab(self):
+        "单图识别：初始化"
         self.is_mocked_objdet = True
-        self.init_open_image_single(
-            self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
-        )
         self.input_image_path = None
         self.output_image_path = None
         self.ui.progressBar_objdet.reset()
-        self.ui.pb_objdet_detect.clicked.connect(self.run_objdet_single)
-        self.ui.pb_objdet_export.clicked.connect(self.export_objdet_single)
-        self.ui.pb_objdet_clear.clicked.connect(self.clear_objdet_single)
+
+        self.ui.pb_objdet_open.clicked.connect(self.open_objdet)
+        self.ui.pb_objdet_detect.clicked.connect(self.run_objdet)
+        self.ui.pb_objdet_export.clicked.connect(self.export_objdet)
+        self.ui.pb_objdet_clear.clicked.connect(self.clear_objdet)
 
     def init_batchdet_tab(self):
+        "多图识别：初始化"
         self.ui.progressBar_batchdet.reset()
-        self.ui.pb_batchdet_detect.clicked.connect(self.run_objdet_batch)
-        self.ui.pb_batchdet_export.clicked.connect(self.export_objdet_batch)
-        self.ui.pb_batchdet_clear.clicked.connect(self.clear_objdet_batch)
+        self.ui.pb_batchdet_open.clicked.connect(self.open_batchdet)
+        self.ui.pb_batchdet_detect.clicked.connect(self.run_batchdet)
+        self.ui.pb_batchdet_export.clicked.connect(self.export_batchdet)
+        self.ui.pb_batchdet_clear.clicked.connect(self.clear_batchdet)
+        NUM_BATCH = 8
+        label_list: list[QLabel] = [
+            getattr(self.ui, f"X{i+1}") for i in range(NUM_BATCH)
+        ]
+        self.image_panel_list = list(map(ObjdetImagePanel, label_list))
 
-    def run_objdet_batch(self): pass
-    def export_objdet_batch(self): pass
-    def clear_objdet_batch(self): pass
+    def open_batchdet(self):
+        pass
 
-    def clear_objdet_single(self):
+    def run_batchdet(self):
+        pass
+
+    def export_batchdet(self):
+        pass
+
+    def clear_batchdet(self):
+        for lb in self.image_panel_list:
+            lb.clear()
+
+    def open_objdet(self):
+        "单图识别：打开一张图像"
+        image_file, _ = QFileDialog.getOpenFileName(
+            self, "打开图像", directory=self.image_dir(), filter="*.jpg;;*.jpeg;;"
+        )
+        if not image_file:
+            print("用户没有任何输入")
+            return
+        if not self.show_image(image_file, self.ui.lb_objdet_input):
+            QMessageBox.warning(self, "错误", f"文件{image_file}不是合法的图像格式。")
+            return
+        print(f"图像展示成功：{image_file}")
+        self.input_image_path = image_file
+        self.output_image_path = None # 旧的识别结果作废了。
+
+    def clear_objdet(self):
         "单图检测：清空"
         self.ui.lb_objdet_input.clear()
         self.ui.lb_objdet_output.clear()
         self.input_image_path = self.output_image_path = None
-        print(f'清空完成')
+        print(f"清空完成")
 
-    def export_objdet_single(self):
+    def export_objdet(self):
         "单图检测：导出检测结果"
         if self.output_image_path is None:
             QMessageBox.warning(self, "错误", "检测结果为空，请先输入一张图片进行检测")
@@ -458,7 +500,7 @@ class MyWindow(QtWidgets.QMainWindow):
         else:
             print(f"文件导出成功：{output_file}")
 
-    def run_objdet_single(self):
+    def run_objdet(self):
         "单图目标检测"
         # 没有输入图像。
         if self.input_image_path is None:
@@ -503,28 +545,6 @@ class MyWindow(QtWidgets.QMainWindow):
             return False
         label.setPixmap(image)
         return True
-
-    def init_open_image_single(
-        self, button: QPushButton, label: QLabel, directory=None
-    ):
-        "单图识别：打开一张图像"
-
-        def open_show_image():
-            image_file, _ = QFileDialog.getOpenFileName(
-                self, "打开图像", directory=directory, filter="*.jpg;;*.jpeg;;"
-            )
-            if not image_file:
-                print("用户没有任何输入")
-                return
-            if not self.show_image(image_file, label):
-                QMessageBox.warning(self, "错误", f"文件{image_file}不是合法的图像格式。")
-                return
-            print(f"图像展示成功：{image_file}")
-            self.input_image_path = image_file
-            self.output_image_path = None  # 这是结果。
-
-        button.clicked.connect(open_show_image)
-
 
     def train_mode(self):
         "训练模式的enum值"
