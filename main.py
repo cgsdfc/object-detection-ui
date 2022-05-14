@@ -395,9 +395,59 @@ class MyWindow(QtWidgets.QMainWindow):
         )
         self.input_image_path = None
         self.ui.progressBar_objdet.reset()
-        self.ui.pb_objdet_detect.clicked.connect(self.run_object_detection)
+        self.ui.pb_objdet_detect.clicked.connect(self.run_objdet_single)
+        self.ui.pb_objdet_export.clicked.connect(self.export_objdet_single)
+        self.ui.pb_objdet_clear.clicked.connect(self.clear_objdet_single)
 
-    def run_object_detection(self):
+    def clear_objdet_single(self):
+        "单图检测：清空"
+        self.ui.lb_objdet_input.clear()
+        self.ui.lb_objdet_output.clear()
+        self.input_image_path = self.output_image_path = None
+        print(f'清空完成')
+
+    def export_objdet_single(self):
+        "单图检测：导出检测结果"
+        if self.output_image_path is None:
+            QMessageBox.warning(self, "错误", "检测结果为空，请先输入一张图片进行检测")
+            return
+        output_image_path = P(self.output_image_path)
+        filename, filetype = QFileDialog.getSaveFileName(
+            self, "选择导出路径", filter=output_image_path.suffix,
+        )
+        if not filename:
+            print(f"用户取消了导出")
+            return
+
+        print(f"文件名：{filename} 文件类型：{filetype}")
+        output_file = P(filename).with_suffix(filetype)
+        if output_file.exists():
+            print(f"文件已存在")
+            rely = QMessageBox.question(
+                self,
+                "文件已存在",
+                f"文件 {output_file} 已存在，要覆盖吗？",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if rely == QMessageBox.No:
+                print("取消了覆盖")
+                return
+            else:
+                print(f"覆盖文件：{output_file}")
+
+        print("文件导出中")
+        self.run_progress_bar(self.ui.progressBar_objdet)
+        try:
+            # 可能是权限问题，IO异常。
+            output_file.write_bytes(output_image_path.read_bytes())
+        except Exception as e:
+            print(f"文件导出异常：{e}")
+            QMessageBox.warning(self, "文件导出失败", f"文件导出异常，请查看日志。")
+        else:
+            print(f"文件导出成功：{output_file}")
+
+    def run_objdet_single(self):
         "单图目标检测"
         # 没有输入图像。
         if self.input_image_path is None:
@@ -408,13 +458,13 @@ class MyWindow(QtWidgets.QMainWindow):
             reply = QMessageBox.question(
                 self,
                 "提示",
-                "输入图像已处理完毕，是否重新检测？",
+                "输入图像已识别完毕，是否重新检测？",
                 QMessageBox.Yes | QMessageBox.Cancel,
                 QMessageBox.Cancel,
             )
             if reply == QMessageBox.Cancel:
                 return
-            print(f'用户要求重新检测')
+            print(f"用户要求重新检测")
             self.output_image_path = None
 
         assert os.path.isfile(self.input_image_path) and self.output_image_path is None
