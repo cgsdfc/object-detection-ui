@@ -2630,15 +2630,15 @@ class Ui_MainWindow(object):
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_7), _translate("MainWindow", "原始图像"))
         self.tabWidget_4.setTabText(self.tabWidget_4.indexOf(self.tab_8), _translate("MainWindow", "识别结果"))
         self.pb_objdet_open.setText(_translate("MainWindow", "打开"))
-        self.pb_objdet_detect.setText(_translate("MainWindow", "识别"))
+        self.pb_objdet_detect.setText(_translate("MainWindow", "检测"))
         self.pb_objdet_export.setText(_translate("MainWindow", "导出"))
         self.pb_objdet_clear.setText(_translate("MainWindow", "重置"))
-        self.tabWidget_config.setTabText(self.tabWidget_config.indexOf(self.tab_12), _translate("MainWindow", "单图识别"))
+        self.tabWidget_config.setTabText(self.tabWidget_config.indexOf(self.tab_12), _translate("MainWindow", "单图检测"))
         self.pb_batchdet_open.setText(_translate("MainWindow", "打开"))
-        self.pb_batchdet_detect.setText(_translate("MainWindow", "识别"))
+        self.pb_batchdet_detect.setText(_translate("MainWindow", "检测"))
         self.pb_batchdet_export.setText(_translate("MainWindow", "导出"))
         self.pb_batchdet_clear.setText(_translate("MainWindow", "重置"))
-        self.tabWidget_config.setTabText(self.tabWidget_config.indexOf(self.tab), _translate("MainWindow", "批量识别"))
+        self.tabWidget_config.setTabText(self.tabWidget_config.indexOf(self.tab), _translate("MainWindow", "批量检测"))
 
 
 if __name__ == "__main__":

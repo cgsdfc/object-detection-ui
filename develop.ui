@@ -5656,7 +5656,7 @@
       </widget>
       <widget class="QWidget" name="tab_12">
        <attribute name="title">
-        <string>单图识别</string>
+        <string>单图检测</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_11">
         <item row="0" column="0">
@@ -6709,7 +6709,7 @@
              <string notr="true">background-color:rgb(67, 255, 120)</string>
             </property>
             <property name="text">
-             <string>识别</string>
+             <string>检测</string>
             </property>
            </widget>
           </item>
@@ -6928,7 +6928,7 @@
       </widget>
       <widget class="QWidget" name="tab">
        <attribute name="title">
-        <string>批量识别</string>
+        <string>批量检测</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_12">
         <item row="1" column="0">
@@ -7203,7 +7203,7 @@
              <string notr="true">background-color:rgb(67, 255, 120)</string>
             </property>
             <property name="text">
-             <string>识别</string>
+             <string>检测</string>
             </property>
            </widget>
           </item>

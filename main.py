@@ -425,6 +425,12 @@ class MyWindow(QtWidgets.QMainWindow):
         self.image_panel_list = list(map(ObjdetImagePanel, label_list))
         self.NUM_BATCH = NUM_BATCH
 
+    def total_input_images_batchdet(self):
+        total = sum(
+            1 for panel in self.image_panel_list if panel.input_image is not None
+        )
+        return total
+
     def open_batchdet(self):
         file_list, _ = QFileDialog.getOpenFileNames(
             self,
@@ -435,27 +441,70 @@ class MyWindow(QtWidgets.QMainWindow):
         if not file_list:
             print("用户没有选择任何文件")
             return
-        if len(file_list) > self.NUM_BATCH:
-            QMessageBox.warning(
-                self, "警告", f"批量识别一次只能识别最多{self.NUM_BATCH}张图像，请重新选择图像",
-            )
-            return
-        print(f'用户输入了{len(file_list)} 个文件')
+        print(f"用户输入了 {len(file_list)} 个文件")
 
-        for i, input_image in enumerate(file_list):
-            panel = self.image_panel_list[i]
-            panel.input_image = input_image
+        # 从第一个没有填充的输入图像开始填充，到满了为止。
+        i = 0
+        for panel in self.image_panel_list:
+            if panel.input_image is not None:
+                continue
+            if i >= len(file_list):
+                break
+            panel.input_image = file_list[i]
             panel.output_image = None
-            print(f'展示图像：{input_image}')
-            self.show_image(input_image, panel.label)
+            self.show_image(panel.input_image, panel.label)
+            print(f"展示图像：{panel.input_image}")
+            i += 1
+
+        print(f"新增了{i}张图像，当前图像：{self.total_input_images_batchdet()}")
+        if i < len(file_list):
+            not_used = len(file_list) - i
+            QMessageBox.warning(
+                self, "警告", f"空间不足，{not_used} 张图像未被选择。",
+            )
+
+    def get_detection_result(self, input_image: P):
+        if self.is_mocked_objdet:
+            output_image_path = MOCKED_IMAGE_RESULT_DIR.joinpath(input_image.name)
+            assert output_image_path.exists()
+            return str(output_image_path)
+        else:
+            print(f"未实现")
+            return None
 
     def run_batchdet(self):
-        pass
+        total = 0
+        for i, panel in enumerate(self.image_panel_list):
+            if panel.input_image is None:
+                print(f"面板{i} 没有图像")
+                continue
+            if panel.output_image is not None:
+                reply = QMessageBox.question(
+                    self,
+                    "提示",
+                    f"面板{i}已经完成检测，是否重新检测？",
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                    QMessageBox.Cancel,
+                )
+                if reply == QMessageBox.Cancel:
+                    print(f'用户取消了检测')
+                    continue
+                print(f'用户要求重新检测')
+
+            output_image = self.get_detection_result(P(panel.input_image))
+            panel.output_image = output_image
+            self.run_progress_bar(self.ui.progressBar_batchdet)
+            self.show_image(output_image, panel.label)
+            print(f"检测面板{i} 输出图像：{output_image}")
+            total += 1
+
+        print(f"检测完成：{total}")
 
     def export_batchdet(self):
         pass
 
     def clear_batchdet(self):
+        print(f"重置所有输入输出图像")
         for lb in self.image_panel_list:
             lb.clear()
 
@@ -547,18 +596,10 @@ class MyWindow(QtWidgets.QMainWindow):
         print(f"目标识别中：{input_image_path}")
         self.run_progress_bar(self.ui.progressBar_objdet)
 
-        if self.is_mocked_objdet:
-            output_image_path = MOCKED_IMAGE_RESULT_DIR.joinpath(input_image_path.name)
-            if not output_image_path.exists():
-                QMessageBox.warning(self, "警告", "输出图像文件不存在")
-                print(f"文件不存在：{output_image_path}")
-                return
-            output_image_path = str(output_image_path)
-            self.show_image(output_image_path, self.ui.lb_objdet_output)
-            self.output_image_path = output_image_path
-            print(f"目标检测结果已经展示：{output_image_path}")
-        else:
-            pass
+        output_image_path = self.get_detection_result(input_image_path)
+        self.show_image(output_image_path, self.ui.lb_objdet_output)
+        self.output_image_path = output_image_path
+        print(f"目标检测结果已经展示：{output_image_path}")
 
     def show_image(self, image_path, label: QLabel):
         "将一个图片路径显示到label上面"
