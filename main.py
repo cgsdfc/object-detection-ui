@@ -12,7 +12,14 @@ import psutil
 
 from Ui_develop import *
 from pyqtgraph import PlotDataItem, PlotItem
-from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit, QLabel
+from PyQt5.QtWidgets import (
+    QMessageBox,
+    QFileDialog,
+    QPushButton,
+    QLineEdit,
+    QLabel,
+    QProgressBar,
+)
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import QThread, pyqtSignal
 from pathlib import Path
@@ -298,14 +305,14 @@ class MyWindow(QtWidgets.QMainWindow):
         "配置面板的初始化。"
         self.config_changed = False
 
-        self.filepath_setter(
+        self.init_filepath_setter(
             self.ui.pb_project_path,
             self.ui.le_project_path,
             isdir=1,
             directory=CODES_DIR,
         )
 
-        self.filepath_setter(
+        self.init_filepath_setter(
             self.ui.pb_data_path,
             self.ui.le_data_path,
             isdir=1,
@@ -313,34 +320,34 @@ class MyWindow(QtWidgets.QMainWindow):
         )
 
         ## 架构配置
-        self.filepath_setter(
+        self.init_filepath_setter(
             self.ui.pb_backbone_config,
             self.ui.le_backbone_config,
             directory=self.configure_dir(),
         )
-        self.filepath_setter(
+        self.init_filepath_setter(
             self.ui.pb_reweight_config,
             self.ui.le_reweight_config,
             directory=self.configure_dir(),
         )
         ## 预训练配置
-        self.filepath_setter(
+        self.init_filepath_setter(
             self.ui.pb_data_config_pretrain,
             self.ui.le_data_config_pretrain,
             directory=self.configure_dir(),
         )
-        self.filepath_setter(
+        self.init_filepath_setter(
             self.ui.pb_python_path_pretrain,
             self.ui.le_python_path_pretrain,
             directory=python_dir(),
         )
         ## 小样本微调配置
-        self.filepath_setter(
+        self.init_filepath_setter(
             self.ui.pb_data_config_fewtune,
             self.ui.le_data_config_fewtune,
             directory=self.configure_dir(),
         )
-        self.filepath_setter(
+        self.init_filepath_setter(
             self.ui.pb_model_path_fewtune,
             self.ui.le_model_path_fewtune,
             directory=self.model_dir(),
@@ -431,6 +438,12 @@ class MyWindow(QtWidgets.QMainWindow):
         )
         return total
 
+    def total_output_images_batchdet(self):
+        total = sum(
+            1 for panel in self.image_panel_list if panel.output_image is not None
+        )
+        return total
+
     def open_batchdet(self):
         file_list, _ = QFileDialog.getOpenFileNames(
             self,
@@ -476,20 +489,9 @@ class MyWindow(QtWidgets.QMainWindow):
         total = 0
         for i, panel in enumerate(self.image_panel_list):
             if panel.input_image is None:
-                print(f"面板{i} 没有图像")
                 continue
             if panel.output_image is not None:
-                reply = QMessageBox.question(
-                    self,
-                    "提示",
-                    f"面板{i}已经完成检测，是否重新检测？",
-                    QMessageBox.Yes | QMessageBox.Cancel,
-                    QMessageBox.Cancel,
-                )
-                if reply == QMessageBox.Cancel:
-                    print(f'用户取消了检测')
-                    continue
-                print(f'用户要求重新检测')
+                continue
 
             output_image = self.get_detection_result(P(panel.input_image))
             panel.output_image = output_image
@@ -501,7 +503,33 @@ class MyWindow(QtWidgets.QMainWindow):
         print(f"检测完成：{total}")
 
     def export_batchdet(self):
-        pass
+        total = self.total_output_images_batchdet()
+        if not total:
+            # 一张检测好的都没有。
+            QMessageBox.warning(self, "错误", "检测结果为空，请先输入图片进行检测")
+            return
+        output_dir = QFileDialog.getExistingDirectory(self, "选择导出目录")
+        if not output_dir:
+            print(f"用户没有选择目录")
+            return
+        output_dir = P(output_dir)
+        # 中途可能有人把目录删除了。
+        if not output_dir.exists():
+            QMessageBox.warning(self, "错误", f"导出目录不存在，请重新选择。")
+            return
+
+        for i, panel in enumerate(self.image_panel_list):
+            if panel.output_image is None:
+                # print(f"面板{i} 没有输出图像")
+                continue
+            output_image = P(panel.output_image)
+            output_file = output_dir.joinpath(output_image.name)
+            print(f'导出面板{i} 到 {output_file}')
+            self.export_file(
+                src_file=output_image,
+                dst_file=output_file,
+                progress_bar=self.ui.progressBar_batchdet,
+            )
 
     def clear_batchdet(self):
         print(f"重置所有输入输出图像")
@@ -545,12 +573,21 @@ class MyWindow(QtWidgets.QMainWindow):
 
         print(f"文件名：{filename} 文件类型：{filetype}")
         output_file = P(filename).with_suffix(filetype)
-        if output_file.exists():
+        self.export_file(
+            src_file=output_image_path,
+            dst_file=output_file,
+            progress_bar=self.ui.progressBar_objdet,
+        )
+
+    def export_file(self, src_file: P, dst_file: P, progress_bar: QProgressBar):
+        "辅助函数：文件导出"
+        src_file, dst_file = map(P, [src_file, dst_file])
+        if dst_file.exists():
             print(f"文件已存在")
             rely = QMessageBox.question(
                 self,
                 "文件已存在",
-                f"文件 {output_file} 已存在，要覆盖吗？",
+                f"文件 {dst_file} 已存在，要覆盖吗？",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
             )
@@ -558,18 +595,17 @@ class MyWindow(QtWidgets.QMainWindow):
                 print("取消了覆盖")
                 return
             else:
-                print(f"覆盖文件：{output_file}")
+                print(f"覆盖文件：{dst_file}")
 
-        print("文件导出中")
-        self.run_progress_bar(self.ui.progressBar_objdet)
+        self.run_progress_bar(progress_bar)
         try:
             # 可能是权限问题，IO异常。
-            output_file.write_bytes(output_image_path.read_bytes())
+            dst_file.write_bytes(src_file.read_bytes())
         except Exception as e:
             print(f"文件导出异常：{e}")
             QMessageBox.warning(self, "文件导出失败", f"文件导出异常，请查看日志。")
         else:
-            print(f"文件导出成功：{output_file}")
+            print(f"文件导出成功：{dst_file}")
 
     def run_objdet(self):
         "单图目标检测"
@@ -851,7 +887,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def image_dir(self):
         return "/home/liao/codes/Object_Detection_UI/images/input"
 
-    def filepath_setter(
+    def init_filepath_setter(
         self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
     ):
         self.config_changed = True
