@@ -13,6 +13,7 @@ import psutil
 from Ui_develop import *
 from pyqtgraph import PlotDataItem, PlotItem
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QPushButton, QLineEdit, QLabel
+from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import QThread, pyqtSignal
 from pathlib import Path
 from collections import defaultdict
@@ -169,7 +170,9 @@ class TrainThread(TrainThreadBase):
     def kill_all_train_processes(self):
         to_kill: list[psutil.Process] = []
 
-        for p in psutil.process_iter(attrs=['exe', 'cwd', 'cmdline']): # 注意：不能访问所有的属性，权限问题。
+        for p in psutil.process_iter(
+            attrs=["exe", "cwd", "cmdline"]
+        ):  # 注意：不能访问所有的属性，权限问题。
             try:
                 exe = p.exe()
                 cwd = p.cwd()
@@ -183,7 +186,7 @@ class TrainThread(TrainThreadBase):
                 # print(f"发现残留进程：{p.pid} {cmdline}")
                 to_kill.append(p)
 
-        print(f'## {len(to_kill)}')
+        print(f"## {len(to_kill)}")
 
         for p in to_kill:
             print(f"杀死进程 {p.pid}")
@@ -241,7 +244,6 @@ class MyWindow(QtWidgets.QMainWindow):
         self.fewtune_model_path = self.ui.le_model_path_fewtune.text
         self.console = self.ui.te_train_logging
         self.train_mode_raw = self.ui.comboBox_train_mode.currentText
-        # self.update_interval = self.ui.#
 
         # 配置面板
         self.init_config_tab()
@@ -249,6 +251,15 @@ class MyWindow(QtWidgets.QMainWindow):
         self.init_train_tab()
         # 目标检测
         self.init_objdet_tab()
+        # 批量检测
+        self.init_batchdet_tab()
+
+    def update_interval(self):
+        data = self.ui.le_update_interval.text()
+        val = int(data)
+        if not val:
+            val = 5
+        return val
 
     def init_train_tab(self):
         "训练面板的初始化"
@@ -266,6 +277,8 @@ class MyWindow(QtWidgets.QMainWindow):
         # 指标绘图板块。
         self.init_plot()
         self.is_training = False  # 是否正在训练。
+        self.ui.le_update_interval.setValidator(QIntValidator(1, 10, self))
+        self.epoch = 0
 
     def init_config_tab(self):
         "配置面板的初始化。"
@@ -376,6 +389,10 @@ class MyWindow(QtWidgets.QMainWindow):
         self.open_image(
             self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
         )
+        self.ui.progressBar_objdet.reset()
+
+    def init_batchdet_tab(self):
+        self.ui.progressBar_batchdet.reset()
 
     def train_mode(self):
         "训练模式的enum值"
@@ -490,6 +507,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.run_progress_bar(total_steps=5, step_time=0.1)
         self.console.append("加载完成，训练已启动。")
         self.is_training = True
+        self.epoch = 0
         # 此时UI已经准备好接收线程的日志。
 
     def is_mocked(self):
@@ -510,9 +528,10 @@ class MyWindow(QtWidgets.QMainWindow):
             self.console.append(f"epoch {epoch:04d} loss {loss:.4f} acc {acc*100:.2f}")
         else:
             self.console.append(line)
+            self.epoch += 1
             if "nGT" not in line:
                 return
-            if (1+self.epoch) % self.update_interval() != 0: # 没到更新周期。
+            if (1 + self.epoch) % self.update_interval() != 0:  # 没到更新周期。
                 return
             data = parse_logline(line, METRICS_MAP)
             print(f"解析后的数据：{data}")
