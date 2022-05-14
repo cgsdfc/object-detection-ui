@@ -394,6 +394,7 @@ class MyWindow(QtWidgets.QMainWindow):
             self.ui.pb_objdet_open, self.ui.lb_objdet_input, directory=self.image_dir(),
         )
         self.input_image_path = None
+        self.output_image_path = None
         self.ui.progressBar_objdet.reset()
         self.ui.pb_objdet_detect.clicked.connect(self.run_objdet_single)
         self.ui.pb_objdet_export.clicked.connect(self.export_objdet_single)
