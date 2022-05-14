@@ -147,11 +147,14 @@ class TrainThread(TrainThreadBase):
         if not self.isInterruptionRequested():
             return False
         if self.p is not None:
-            # print(f"正在杀死进程：{self.p.pid}")
+            print(f"正在杀死进程：{self.p.pid}")
             try:
                 # self.p.kill()
-                # self.p.terminate()
-                self.kill_all_train_processes()
+                # 注意：必须用 KeyboardInterrupt 来杀死进程，即 SIGINT 2
+                # 他才会做清理，如果是一般的kill（SIGKILL），他是不做任何清理的。
+                # p.kill() p.terminate() 都是不行的。
+                self.p.send_signal(signal.SIGINT)
+                self.p.wait()
             except Exception as e:
                 print(f"杀死进程时抛出异常：{e}")
             else:
@@ -181,7 +184,7 @@ class TrainThread(TrainThreadBase):
                 to_kill.append(p)
 
         print(f'## {len(to_kill)}')
-        
+
         for p in to_kill:
             print(f"杀死进程 {p.pid}")
             os.kill(p.pid, signal.SIGKILL)
