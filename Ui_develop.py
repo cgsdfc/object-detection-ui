@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/liao/codes/Object_Detection_UI/develop.ui'
+# Form implementation generated from reading ui file './develop.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -1972,7 +1972,7 @@ class Ui_MainWindow(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollArea_2.setObjectName("scrollArea_2")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 698, 279))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 698, 286))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.horizontalLayout_16 = QtWidgets.QHBoxLayout(self.scrollAreaWidgetContents_2)
         self.horizontalLayout_16.setObjectName("horizontalLayout_16")
@@ -2123,7 +2123,6 @@ class Ui_MainWindow(object):
         self.lb_objdet_input.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.lb_objdet_input.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.lb_objdet_input.setText("")
-        self.lb_objdet_input.setPixmap(QtGui.QPixmap("/home/liao/codes/Object_Detection_UI/../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg"))
         self.lb_objdet_input.setScaledContents(True)
         self.lb_objdet_input.setObjectName("lb_objdet_input")
         self.gridLayout_6.addWidget(self.lb_objdet_input, 0, 0, 1, 1)
@@ -2278,7 +2277,6 @@ class Ui_MainWindow(object):
         self.lb_objdet_output.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.lb_objdet_output.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.lb_objdet_output.setText("")
-        self.lb_objdet_output.setPixmap(QtGui.QPixmap("/home/liao/codes/Object_Detection_UI/../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg"))
         self.lb_objdet_output.setScaledContents(True)
         self.lb_objdet_output.setObjectName("lb_objdet_output")
         self.horizontalLayout_15.addWidget(self.lb_objdet_output)

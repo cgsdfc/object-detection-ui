@@ -5672,7 +5672,7 @@
                <x>0</x>
                <y>0</y>
                <width>698</width>
-               <height>279</height>
+               <height>286</height>
               </rect>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout_16">
@@ -6114,9 +6114,6 @@
                     </property>
                     <property name="text">
                      <string/>
-                    </property>
-                    <property name="pixmap">
-                     <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
                     </property>
                     <property name="scaledContents">
                      <bool>true</bool>
@@ -6581,9 +6578,6 @@
                     </property>
                     <property name="text">
                      <string/>
-                    </property>
-                    <property name="pixmap">
-                     <pixmap>../../.designer/FSODM/dataset/NWPU/training/images/001__1__0___0.jpg</pixmap>
                     </property>
                     <property name="scaledContents">
                      <bool>true</bool>
