@@ -28,6 +28,8 @@ from pathlib import Path as P
 
 # import numpy as np
 
+MOCKED_TRAIN = True
+MOCKED_OBJDET = True
 
 CODES_DIR = "/home/liao/codes"
 
@@ -121,6 +123,8 @@ class TrainThreadMocked(TrainThreadBase):
     def __init__(self, cmd: list, cwd: str) -> None:
         super().__init__()
         self.epochs = 20
+        self.cmd = cmd
+        self.cwd = cwd
 
     def run(self):
         print("训练线程启动")
@@ -253,8 +257,10 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        # self.TrainThreadClass = TrainThreadMocked
-        self.TrainThreadClass = TrainThread
+        if MOCKED_TRAIN:
+            self.TrainThreadClass = TrainThreadMocked
+        else:
+            self.TrainThreadClass = TrainThread
 
         # 辅助变量
         self.python_path = self.ui.le_python_path_pretrain.text
