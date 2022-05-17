@@ -9,6 +9,7 @@ import time
 from collections import defaultdict
 from pathlib import Path as P
 # from vis import draw_anchor_box
+import  cv2
 
 # import vis
 import pyqtgraph as pg

@@ -1,15 +1,23 @@
-import cv2
+# import cv2
 import os
 from shutil import copyfile
 import numpy as np
 
 import tqdm
+import matplotlib.pyplot as plt
 
 
 # conf_thresh=0.3
 # raw_images_path = "测图片路径"
 # res_path = "检测结果路径"
 # output_path = "可时化后保存路径"
+
+def bbox_to_rect(bbox, color):  # 本函数已保存在d2lzh包中方便以后使用
+    # 将边界框(左上x, 左上y, 右下x, 右下y)格式转换成matplotlib格式：
+    # ((左上x, 左上y), 宽, 高)
+    return plt.Rectangle(
+        xy=(bbox[0], bbox[1]), width=bbox[2] - bbox[0], height=bbox[3] - bbox[1],
+        fill=False, edgecolor=color, linewidth=2)
 
 
 def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, verbose=False, raw_images_path=None,
@@ -39,7 +47,8 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
 
     if vis_classes is None:
         vis_classes = ["airplane", "ship"]
-        color = {"airplane": (0, 215, 255), "ship": (48, 48, 255)}
+        # color = {"airplane": (0, 215, 255), "ship": (48, 48, 255)}
+        color = {"airplane": 'yellow', "ship": 'red'}
     else:
         color = {cls: tuple(np.random.randint(low=0, high=256, size=[3])) for cls in vis_classes}
 
@@ -70,11 +79,20 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
                 if not os.path.exists(input_image):
                     # 文件不存在，说明这个文件不需要可视化。
                     continue
-                img = cv2.imread(input_image, cv2.IMREAD_COLOR)
-                cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color[cls], thickness=2, lineType=8)
-                cv2.putText(img, cls + " " + str(conf), (x_min - 5, y_min - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                            fontScale=0.75, color=color[cls], thickness=2, lineType=8)
-                cv2.imwrite(input_image, img)
+                # img = cv2.imread(input_image, cv2.IMREAD_COLOR)
+                image = plt.imread(input_image)
+                fig = plt.imshow(image)
+                box = [x_min, y_min, x_max, y_max]
+                rect = bbox_to_rect(box, color[cls])
+                fig.axes.add_patch(rect)
+                fig.axes.text(rect.xy[0] + 24, rect.xy[1] + 10, cls,
+                              va='center', ha='center', fontsize=6, color=color[cls])
+                plt.savefig(input_image)
+                plt.close()
+                # cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color[cls], thickness=2, lineType=8)
+                # cv2.putText(img, cls + " " + str(conf), (x_min - 5, y_min - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                #             fontScale=0.75, color=color[cls], thickness=2, lineType=8)
+                # cv2.imwrite(input_image, img)
 
     return result
 
@@ -88,7 +106,7 @@ if __name__ == '__main__':
     result = draw_anchor_box(
         raw_images_list=raw_images_list,
         res_path='/home/liao/codes/Results/results/nwpu_p_10shot_novel0_neg0/ene000050',
-        output_path='/home/liao/codes/Object_Detection_UI/test_images/output2'
+        output_path='/home/liao/codes/Object_Detection_UI/test_images/output3'
     )
 
     for p in result:
