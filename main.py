@@ -37,12 +37,29 @@ CODES_DIR = "/home/liao/codes"
 # 目标检测结果的预生成目录。
 MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/Results/vis/conf0-0.5/0.5/nwpu_p_30shot_novel0_neg0")
 
+THIS_PROJECT_DIR = P(__file__).parent
+
+print(f'UI项目路径：{THIS_PROJECT_DIR}')
+
+
+def output_image_dir():
+    "预先挑选的检测目录"
+    if MOCKED_OBJDET:
+        return THIS_PROJECT_DIR/'test_images'/'output'
+    return None
+
+
 def input_image_dir():
     "选择输入图像的目录"
-    if MOCKED_OBJDET:
-        return "/home/liao/codes/Object_Detection_UI/images/input"
-    else:
-        return None
+    # 必须返回str，因为是给Qt接口用的。
+    return str(THIS_PROJECT_DIR/'test_images'/'input')
+
+
+def export_dir():
+    dir = THIS_PROJECT_DIR.joinpath('export')
+    dir.mkdir(exist_ok=True)
+    return str(dir)
+
 
 def python_dir():
     "选择Python解析器的备选路径"
@@ -493,7 +510,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def get_detection_result(self, input_image: P):
         "获取目标检测的结果（单图）"
         if MOCKED_OBJDET:
-            output_image_path = MOCKED_IMAGE_RESULT_DIR.joinpath(input_image.name)
+            output_image_path = output_image_dir().joinpath(input_image.name)
             assert output_image_path.exists()
             return str(output_image_path)
         else:
@@ -528,7 +545,7 @@ class MyWindow(QtWidgets.QMainWindow):
             # 一张检测好的都没有。
             QMessageBox.warning(self, "错误", "检测结果为空，请先输入图片进行检测")
             return
-        output_dir = QFileDialog.getExistingDirectory(self, "选择导出目录")
+        output_dir = QFileDialog.getExistingDirectory(self, "选择导出目录", directory=export_dir())
         if not output_dir:
             print(f"用户没有选择目录")
             return
@@ -585,7 +602,7 @@ class MyWindow(QtWidgets.QMainWindow):
             return
         output_image_path = P(self.output_image_path)
         filename, filetype = QFileDialog.getSaveFileName(
-            self, "选择导出路径", filter=output_image_path.suffix,
+            self, "选择导出路径", filter=output_image_path.suffix,directory=export_dir(),
         )
         if not filename:
             print(f"用户取消了导出")
