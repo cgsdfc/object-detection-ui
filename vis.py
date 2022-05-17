@@ -5,7 +5,8 @@ import numpy as np
 
 import tqdm
 import matplotlib.pyplot as plt
-
+from collections import defaultdict
+from joblib import Parallel, delayed
 
 # conf_thresh=0.3
 # raw_images_path = "测图片路径"
@@ -59,12 +60,15 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
                     res_name.split(".")[0].split("_")[-1] in vis_classes]
     print(f'模型关于类别的输出文件：{vis_res_path}')
 
+    # 图像名字到上面所有锚框+置信度的映射
+    images_to_boxes = defaultdict(list)
+
     for cls, path in zip(vis_classes, vis_res_path):
         print(f'可视化类别：{cls} 模型输出：{path}')
 
         with open(path, "r") as res_file:
             lines = res_file.readlines()
-            for line in tqdm.tqdm(lines):
+            for line in lines:
                 img_name, conf, x_min, y_min, x_max, y_max = line.split()
                 img_name = img_name + ".jpg"
                 x_min = int(float(x_min))
@@ -74,25 +78,35 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
                 conf = round(float(conf), 2)
                 if conf < conf_thresh:
                     continue
-
                 input_image = os.path.join(output_path, img_name)
                 if not os.path.exists(input_image):
                     # 文件不存在，说明这个文件不需要可视化。
                     continue
-                # img = cv2.imread(input_image, cv2.IMREAD_COLOR)
-                image = plt.imread(input_image)
-                fig = plt.imshow(image)
                 box = [x_min, y_min, x_max, y_max]
-                rect = bbox_to_rect(box, color[cls])
-                fig.axes.add_patch(rect)
-                fig.axes.text(rect.xy[0] + 24, rect.xy[1] + 10, cls,
-                              va='center', ha='center', fontsize=6, color=color[cls])
-                plt.savefig(input_image)
-                plt.close()
-                # cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color[cls], thickness=2, lineType=8)
-                # cv2.putText(img, cls + " " + str(conf), (x_min - 5, y_min - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                #             fontScale=0.75, color=color[cls], thickness=2, lineType=8)
-                # cv2.imwrite(input_image, img)
+                images_to_boxes[img_name].append((box, cls))
+
+    print(images_to_boxes)
+
+    for input_image in tqdm.tqdm(raw_images_list):
+        # img = cv2.imread(input_image, cv2.IMREAD_COLOR)
+        img_name = input_image.name
+        output_image = os.path.join(output_path, img_name)
+        box_list = images_to_boxes[img_name]
+        image = plt.imread(input_image)
+        fig = plt.imshow(image)
+
+        for box, cls in box_list:
+            rect = bbox_to_rect(box, color[cls])
+            fig.axes.add_patch(rect)
+            fig.axes.text(rect.xy[0] + 24, rect.xy[1] + 10, f'{cls} {conf}',
+                          va='center', ha='center', fontsize=10, color=color[cls])
+
+        plt.savefig(output_image)
+        plt.close()
+        # cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color[cls], thickness=2, lineType=8)
+        # cv2.putText(img, cls + " " + str(conf), (x_min - 5, y_min - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+        #             fontScale=0.75, color=color[cls], thickness=2, lineType=8)
+        # cv2.imwrite(input_image, img)
 
     return result
 
