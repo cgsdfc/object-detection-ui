@@ -10,7 +10,7 @@ from collections import defaultdict
 from pathlib import Path as P
 # from vis import draw_anchor_box
 
-import vis
+# import vis
 import pyqtgraph as pg
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator
@@ -39,7 +39,7 @@ MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/Results/vis/conf0-0.5/0.5/nwpu_p_3
 
 THIS_PROJECT_DIR = P(__file__).parent
 
-print(f'UI项目路径：{THIS_PROJECT_DIR}')
+# print(f'UI项目路径：{THIS_PROJECT_DIR}')
 
 
 def output_image_dir():
@@ -284,15 +284,10 @@ class ObjdetMode(enum.Enum):
     run_model = 2  # 运行模型。
 
 
-class ObjdetThreadBase(QThread):
-    detection_start_signal = pyqtSignal(bool)  # 是否正常启动了
-    detection_end_signal = pyqtSignal(bool)  # 是否正常结束了
-    # 可以传输多次。
-    detection_result_signal = pyqtSignal(list)  # 返回输出图像的路径的列表（前提是正常启动了）
-
-
-class ObjdetThread(ObjdetThreadBase):
+class ObjdetThread(QThread):
     "Mocked 的目标检测后台线程"
+    detection_error_signal = pyqtSignal()  # 是否正常启动了
+    detection_result_signal = pyqtSignal(list)  # 返回输出图像的路径的列表（前提是正常启动了）
 
     def __init__(self, input_image_list: list, mode: ObjdetMode):
         super().__init__()
@@ -310,9 +305,8 @@ class ObjdetThread(ObjdetThreadBase):
 
     def run_copy_output(self):
         "把预先生成的图像作为输出"
-        status = output_image_dir().is_dir()
-        self.detection_result_signal.emit(status)
-        if not status:
+        if not output_image_dir().is_dir():
+            self.detection_error_signal.emit()
             print(f'输出图像目录不存在：{output_image_dir()}')
             return
         result = []
@@ -320,18 +314,16 @@ class ObjdetThread(ObjdetThreadBase):
             output_image_path = output_image_dir().joinpath(input_image.name)
             if not output_image_path.exists():
                 print(f'输出图像不存在：{output_image_path}')
-                self.detection_end_signal.emit(False)
+                self.detection_error_signal.emit()
                 return
             result.append(output_image_path)
 
-        self.detection_end_signal.emit(True)
         self.detection_result_signal.emit(result)
 
     def run_vis(self):
         "把模型的输出文本文件结合输入图像进行可视化后输出"
-        status = detection_result_dir().is_dir()
-        self.detection_result_signal.emit(status)
-        if not status:
+        if not detection_result_dir().is_dir():
+            self.detection_error_signal.emit()
             print(f'模型预测输出目录不存在：{detection_result_dir()}')
             return
         try:
@@ -341,14 +333,11 @@ class ObjdetThread(ObjdetThreadBase):
                 raw_images_list=self.input_image_list,
             )
         except Exception as e:
-            status = False
+            self.detection_error_signal.emit()
             print(f'调用 vis 脚本失败：{e}')
             return
         else:
-            status = True
-        finally:
-            self.detection_end_signal.emit(status)
-        self.detection_result_signal.emit(result)
+            self.detection_result_signal.emit(result)
 
     def run(self) -> None:
         print(f'目标检测线程启动')
@@ -542,7 +531,8 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def init_batchdet_tab(self):
         "多图识别：初始化"
-        self.thread_batchdet = None
+        # 多图检测共用单图的线程。
+        # self.thread_batchdet = None
         self.ui.progressBar_batchdet.reset()
         self.ui.pb_batchdet_open.clicked.connect(self.open_batchdet)
         self.ui.pb_batchdet_detect.clicked.connect(self.detect_batchdet)
@@ -568,6 +558,15 @@ class MyWindow(QtWidgets.QMainWindow):
             1 for panel in self.image_panel_list if panel.output_image is not None
         )
         return total
+
+    def stop_thread_objdet(self):
+        t = self.thread_objdet
+        if t is None:
+            return
+        t.quit()
+        t.wait()
+        t.deleteLater()
+        self.thread_objdet = None
 
     def open_batchdet(self):
         "批量识别：打开输入图像"
@@ -602,37 +601,33 @@ class MyWindow(QtWidgets.QMainWindow):
                 self, "警告", f"空间不足，{not_used} 张图像未被选择。",
             )
 
-    def get_detection_result(self, input_image: P):
-        "获取目标检测的结果（单图）"
-        if MOCKED_OBJDET:
-            output_image_path = output_image_dir().joinpath(input_image.name)
-            assert output_image_path.exists()
-            return str(output_image_path)
-        else:
-            print(f"未实现")
-            return None
-
     def detect_batchdet(self):
         "批量识别：进行识别"
         if not self.total_input_images_batchdet():
             QMessageBox.warning(self, "错误", "输入图像为空，请打开图像文件进行检测")
             return
 
-        total = 0
+        input_image_list = []
+        self.input_image_ids = []
         for i, panel in enumerate(self.image_panel_list):
-            if panel.input_image is None:
+            if panel.input_image is None: # 用户没有输入
                 continue
-            if panel.output_image is not None:
+            if panel.output_image is not None: # 不要重复检测
                 continue
+            input_image_list.append(panel.input_image)
+            self.input_image_ids.append(i)
 
-            output_image = self.get_detection_result(P(panel.input_image))
+        if not input_image_list:
+            return # 所有的输入图像都检测过了，没有要检测的。
+        self.start_thread_objdet(input_image_list, self.handle_detection_result_batch)
+
+    def handle_detection_result_batch(self, result):
+        for i, output_image in zip(self.input_image_ids, result):
+            panel = self.image_panel_list[i]
             panel.output_image = output_image
             self.run_progress_bar(self.ui.progressBar_batchdet)
             self.show_image(output_image, panel.label)
             print(f"检测面板{i} 输出图像：{output_image}")
-            total += 1
-
-        print(f"检测完成：{total}")
 
     def export_batchdet(self):
         total = self.total_output_images_batchdet()
@@ -665,6 +660,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def clear_batchdet(self):
         print(f"重置所有输入输出图像")
+        self.stop_thread_objdet()
         for lb in self.image_panel_list:
             lb.clear()
 
@@ -688,6 +684,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.lb_objdet_input.clear()
         self.ui.lb_objdet_output.clear()
         self.input_image_path = self.output_image_path = None
+        self.stop_thread_objdet()
         print(f"清空完成")
 
     def export_objdet(self):
@@ -763,11 +760,29 @@ class MyWindow(QtWidgets.QMainWindow):
         assert os.path.isfile(self.input_image_path) and self.output_image_path is None
         input_image_path = P(self.input_image_path)
         print(f"目标识别中：{input_image_path}")
-        self.run_progress_bar(self.ui.progressBar_objdet)
+        self.start_thread_objdet([input_image_path], self.handle_detection_result_single)
 
-        output_image_path = self.get_detection_result(input_image_path)
+    def start_thread_objdet(self, input_image_list, handle_detection_result):
+        "启动目标检测线程（start和end信号都有公共代码处理）"
+        self.stop_thread_objdet()
+        t = ObjdetThread(input_image_list, ObjdetMode.copy_output)
+        t.detection_error_signal.connect(self.handle_detection_error)
+        t.detection_result_signal.connect(handle_detection_result)
+        t.start()
+        self.thread_objdet = t
+
+    def handle_detection_error(self):
+        "处理 error_signal "
+        QMessageBox.warning(self, "错误", "目标检测失败，请查看日志输出")
+        self.stop_thread_objdet()
+
+    def handle_detection_result_single(self, result):
+        assert len(result) == 1
+        output_image_path = result[0]
+        self.run_progress_bar(self.ui.progressBar_objdet)
         self.show_image(output_image_path, self.ui.lb_objdet_output)
         self.output_image_path = output_image_path
+        self.stop_thread_objdet()
         print(f"目标检测结果已经展示：{output_image_path}")
 
     def show_image(self, image_path, label: QLabel):
