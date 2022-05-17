@@ -1,17 +1,17 @@
-import time
-import sys
-import subprocess
-import signal
-import shlex
-import random
-import pyqtgraph as pg
-import os
-import numpy as np
 import enum
-import psutil
+import os
+import sys
+import random
+import shlex
+import signal
+import subprocess
+import time
+from collections import defaultdict
+from pathlib import Path as P
 
-from Ui_develop import *
-from pyqtgraph import PlotDataItem, PlotItem
+import pyqtgraph as pg
+from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
     QMessageBox,
     QFileDialog,
@@ -20,11 +20,9 @@ from PyQt5.QtWidgets import (
     QLabel,
     QProgressBar,
 )
-from PyQt5.QtGui import QIntValidator
-from PyQt5.QtCore import QThread, pyqtSignal
-from pathlib import Path
-from collections import defaultdict
-from pathlib import Path as P
+from pyqtgraph import PlotDataItem, PlotItem
+
+from Ui_develop import *
 
 # import numpy as np
 
@@ -45,14 +43,23 @@ print(f'UI项目路径：{THIS_PROJECT_DIR}')
 def output_image_dir():
     "预先挑选的检测目录"
     if MOCKED_OBJDET:
-        return THIS_PROJECT_DIR/'test_images'/'output'
+        return THIS_PROJECT_DIR / 'test_images' / 'output'
     return None
 
 
 def input_image_dir():
     "选择输入图像的目录"
     # 必须返回str，因为是给Qt接口用的。
-    return str(THIS_PROJECT_DIR/'test_images'/'input')
+    return str(THIS_PROJECT_DIR / 'test_images' / 'input')
+
+
+def train_log_paths():
+    "用来mocked的训练日志"
+    train_log = THIS_PROJECT_DIR / 'train_log'
+    return {
+        TrainMode.pretrain: train_log / 'train_loss.txt',
+        TrainMode.fewtune: train_log / 'fewtune_loss.txt',
+    }
 
 
 def export_dir():
@@ -136,6 +143,14 @@ TEXT_TO_TRAIN_MODE = {
 }
 
 
+def random_bool():
+    return random.random() > 0.5
+
+
+def is_train_step_line(line: str):
+    return "nGT" in line
+
+
 class TrainThreadBase(QThread):
     # 拉起训练进程后发送此信号，反馈【是否拉起成功】
     train_start_signal = pyqtSignal(bool)
@@ -150,37 +165,42 @@ class TrainThreadBase(QThread):
 class TrainThreadMocked(TrainThreadBase):
     "Mocked 版训练线程，提供测试UI的数据"
 
-    def __init__(self, cmd: list, cwd: str) -> None:
+    def __init__(self, cmd: list, cwd: str, mode: TrainMode) -> None:
         super().__init__()
-        self.epochs = 20
         self.cmd = cmd
         self.cwd = cwd
+        self.logfile = train_log_paths()[mode]
+        print(f'读取日志文件：{self.logfile}')
+        self.log_lines = P(self.logfile).read_text().splitlines()
+        print(self.__class__.__name__)
 
     def run(self):
         print("训练线程启动")
-        self.train_start_signal.emit(True)
+        start_ok = random_bool()
+        self.train_start_signal.emit(start_ok)
+        if not start_ok:
+            print(f'训练进程启动失败')
+            return
 
-        for epoch in range(self.epochs):
+        for epoch, line in enumerate(self.log_lines):
             if self.isInterruptionRequested():
                 print(f"调用方请求中断")
-                self.train_interrupt_signal.emit(True)
+                self.train_interrupt_signal.emit(random_bool())
                 return
-            self.msleep(1000)
-            acc = random.random()
-            loss = np.exp(-epoch)
-            line = f"{epoch} {loss} {acc}"
+            if is_train_step_line(line):
+                self.msleep(1000) # 模拟一个训练步的耗时。
             print("训练线程发送日志")
             self.train_step_signal.emit(line)
 
         print("训练线程结束")
-        rc = int(random.random() > 0.5)  # 测试异常退出的情况。
+        rc = int(random_bool())  # 测试异常退出的情况。
         self.train_end_signal.emit(rc)
 
 
 class TrainThread(TrainThreadBase):
     "训练线程的实现，负责管理一个训练进程的启动、抓取日志、中断清理，作为UI线程和训练进程之间的通信桥梁。"
 
-    def __init__(self, cmd: list, cwd: str) -> None:
+    def __init__(self, cmd: list, cwd: str, mode: TrainMode) -> None:
         "cmd：要运行的命令；cwd：运行命令所在的目录。"
         super().__init__()
         if isinstance(cmd, str):
@@ -407,30 +427,19 @@ class MyWindow(QtWidgets.QMainWindow):
         plt_loss, plt_metrics = self.plt_loss, self.plt_metrics
         plt_loss.clear()
         plt_metrics.clear()
-        if self.is_mocked():
-            self.plt_items: dict[str, PlotDataItem] = {
-                StringConstants.loss: plt_loss.plot(name=StringConstants.loss),
-                StringConstants.acc: plt_metrics.plot(
-                    name=StringConstants.acc
-                ),
-            }
-            self.plt_pen: dict[str, str] = {
-                StringConstants.loss: "b",
-                StringConstants.acc: "r",
-            }
-        else:
-            self.plt_items: dict[str, PlotDataItem] = {
-                StringConstants.loss: plt_loss.plot(name=StringConstants.loss),
-                StringConstants.recall: plt_metrics.plot(name=StringConstants.recall),
-                StringConstants.precision: plt_metrics.plot(
-                    name=StringConstants.precision
-                ),
-            }
-            self.plt_pen: dict[str, str] = {
-                StringConstants.loss: "b",
-                StringConstants.recall: "r",
-                StringConstants.precision: "g",
-            }
+
+        self.plt_items: dict[str, PlotDataItem] = {
+            StringConstants.loss: plt_loss.plot(name=StringConstants.loss),
+            StringConstants.recall: plt_metrics.plot(name=StringConstants.recall),
+            StringConstants.precision: plt_metrics.plot(
+                name=StringConstants.precision
+            ),
+        }
+        self.plt_pen: dict[str, str] = {
+            StringConstants.loss: "b",
+            StringConstants.recall: "r",
+            StringConstants.precision: "g",
+        }
 
         self.plt_data: dict[str, list] = defaultdict(list)
         self.plt_keys = self.plt_items.keys
@@ -602,7 +611,7 @@ class MyWindow(QtWidgets.QMainWindow):
             return
         output_image_path = P(self.output_image_path)
         filename, filetype = QFileDialog.getSaveFileName(
-            self, "选择导出路径", filter=output_image_path.suffix,directory=export_dir(),
+            self, "选择导出路径", filter=output_image_path.suffix, directory=export_dir(),
         )
         if not filename:
             print(f"用户取消了导出")
@@ -756,7 +765,7 @@ class MyWindow(QtWidgets.QMainWindow):
         # 如果线程没有启动，那么UI就维持不变。
         cmd = self.command_for_train_mode()
         assert self.train_thread is None, "残留的训练线程"
-        self.train_thread = self.TrainThreadClass(cmd=cmd, cwd=self.project_dir())
+        self.train_thread = self.TrainThreadClass(cmd=cmd, cwd=self.project_dir(), mode=self.train_mode())
         self.train_thread.train_start_signal.connect(self.handle_train_start)
         self.train_thread.train_step_signal.connect(self.handle_train_step)
         self.train_thread.train_end_signal.connect(self.handle_train_end)
@@ -791,6 +800,8 @@ class MyWindow(QtWidgets.QMainWindow):
         "训练线程：启动进程，成功或者失败"
         if not start_ok:
             print("训练线程启动失败")
+            # 注意：线程可能已经退出了，但还是需要重置系统状态的。
+            self.stop_train_thread()
             QMessageBox.warning(self, "警告", "训练进程启动失败，请检查配置。")
             return
 
@@ -818,17 +829,12 @@ class MyWindow(QtWidgets.QMainWindow):
         self.console.append(line)
         self.epoch += 1
 
-        if self.is_mocked():
-            print(f"UI 收到一行训练日志：{line}")
-            epoch, loss, acc = map(float, line.split())
-            data = dict(loss=loss, acc=acc)
-        else:
-            if "nGT" not in line:
-                return
-            if (1 + self.epoch) % self.update_interval() != 0:  # 没到更新周期。
-                return
-            data = parse_logline(line, METRICS_MAP)
-            print(f"解析后的数据：{data}")
+        if not is_train_step_line(line):
+            return
+        if (1 + self.epoch) % self.update_interval() != 0:  # 没到更新周期。
+            return
+        data = parse_logline(line, METRICS_MAP)
+        print(f"解析后的数据：{data}")
 
         for key in self.plt_keys():
             self.plt_data[key].append(data[key])
@@ -918,9 +924,8 @@ class MyWindow(QtWidgets.QMainWindow):
             return None
         return os.path.join(prj, "backup")
 
-
     def init_filepath_setter(
-        self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
+            self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
     ):
         self.config_changed = True
 
