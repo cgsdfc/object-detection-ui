@@ -38,6 +38,11 @@ CODES_DIR = "/home/liao/codes"
 MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/FSODM/vis/results")
 
 
+def python_dir():
+    "选择Python解析器的备选路径"
+    return "/home/liao/anaconda3/envs"
+
+
 class StringConstants:
     "字符串常量，防止编码错误"
     precision = "precision"
@@ -45,6 +50,7 @@ class StringConstants:
     recall50 = "recall50"
     total = "total"
     loss = "loss"
+    acc = "acc"  # 测试用
 
 
 class LoglineParseResult:
@@ -60,6 +66,7 @@ class LoglineParseResult:
     cls = None
     total = None
     conf = None
+
 
 # 将训练日志的字段和我们想要的字段做映射。
 METRICS_MAP = {
@@ -106,10 +113,6 @@ TEXT_TO_TRAIN_MODE = {
 }
 
 
-def python_dir():
-    return "/home/liao/anaconda3/envs"
-
-
 class TrainThreadBase(QThread):
     # 拉起训练进程后发送此信号，反馈【是否拉起成功】
     train_start_signal = pyqtSignal(bool)
@@ -123,6 +126,7 @@ class TrainThreadBase(QThread):
 
 class TrainThreadMocked(TrainThreadBase):
     "Mocked 版训练线程，提供测试UI的数据"
+
     def __init__(self, cmd: list, cwd: str) -> None:
         super().__init__()
         self.epochs = 20
@@ -226,6 +230,7 @@ class TrainThread(TrainThreadBase):
 
 class ObjdetImagePanel:
     "多图检测的一个图片面板。"
+
     def __init__(self, label: QLabel) -> None:
         self.label = label
         self.input_image = None
@@ -350,7 +355,6 @@ class MyWindow(QtWidgets.QMainWindow):
         pg.setConfigOption("background", "#FFFFFF")
         pg.setConfigOption("foreground", "k")
         pg.setConfigOption("antialias", True)
-        # pg.setConfigOption("leftButtonPan", False)
 
         win = pg.GraphicsLayoutWidget()
         layout = self.ui.graph_layout
@@ -364,25 +368,36 @@ class MyWindow(QtWidgets.QMainWindow):
         plt_loss.showGrid(x=True, y=True)  # 栅格设置函数
         # plt_loss.setLabel("bottom", text="epoch")  # x轴设置函数
         plt_loss.addLegend()  # 可选择是否添加legend
-        # plt_loss.setMouseEnabled(x=False, y=False)
 
         win.nextRow()
         plt_metrics: PlotItem = win.addPlot(title="指标")
-        # plt_metrics = win.addPlot()
         # plt_metrics.setLabel("left", text="metrics")  # y轴设置函数
         # plt_loss.setLogScale(y=True)
         plt_metrics.showGrid(x=True, y=True)  # 栅格设置函数
         # plt_metrics.setLabel("bottom", text="epoch")  # x轴设置函数
         plt_metrics.addLegend()  # 可选择是否添加legend
         # plt_metrics.setMouseEnabled(x=False, y=False)
+        self.plt_loss, self.plt_metrics = plt_loss, plt_metrics
+        self.clear_plot()
 
+    def clear_plot(self):
+        "辅助函数：清空绘图有关的变量"
+        plt_loss, plt_metrics = self.plt_loss, self.plt_metrics
+        plt_loss.clear()
+        plt_metrics.clear()
         if self.is_mocked():
-            self.plt_loss: PlotDataItem = plt_loss.plot(name="loss")
-            self.plt_metrics: PlotDataItem = plt_metrics.plot(name="acc")
-            self.loss_list = []
-            self.metrics_list = []
+            self.plt_items: dict[str, PlotDataItem] = {
+                StringConstants.loss: plt_loss.plot(name=StringConstants.loss),
+                StringConstants.acc: plt_metrics.plot(
+                    name=StringConstants.acc
+                ),
+            }
+            self.plt_pen: dict[str, str] = {
+                StringConstants.loss: "b",
+                StringConstants.acc: "r",
+            }
         else:
-            self.plt: dict[str, PlotDataItem] = {
+            self.plt_items: dict[str, PlotDataItem] = {
                 StringConstants.loss: plt_loss.plot(name=StringConstants.loss),
                 StringConstants.recall: plt_metrics.plot(name=StringConstants.recall),
                 StringConstants.precision: plt_metrics.plot(
@@ -394,8 +409,9 @@ class MyWindow(QtWidgets.QMainWindow):
                 StringConstants.recall: "r",
                 StringConstants.precision: "g",
             }
-            self.plt_data: dict[str, list] = defaultdict(list)
-            self.plt_keys = self.plt.keys
+
+        self.plt_data: dict[str, list] = defaultdict(list)
+        self.plt_keys = self.plt_items.keys
 
     def init_objdet_tab(self):
         "单图识别：初始化"
@@ -418,7 +434,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.pb_batchdet_clear.clicked.connect(self.clear_batchdet)
         NUM_BATCH = 8
         label_list: list[QLabel] = [
-            getattr(self.ui, f"X{i+1}") for i in range(NUM_BATCH)
+            getattr(self.ui, f"X{i + 1}") for i in range(NUM_BATCH)
         ]
         self.image_panel_list = list(map(ObjdetImagePanel, label_list))
         self.NUM_BATCH = NUM_BATCH
@@ -763,29 +779,24 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def handle_train_step(self, line: str):
         "训练线程：发来一行训练日志"
+        self.console.append(line)
+        self.epoch += 1
+
         if self.is_mocked():
             print(f"UI 收到一行训练日志：{line}")
             epoch, loss, acc = map(float, line.split())
-            # 解析日志，更新绘图。
-            self.loss_list.append(loss)
-            self.metrics_list.append(acc)
-            self.plt_loss.setData(self.loss_list, pen="b")
-            self.plt_metrics.setData(self.metrics_list, pen="r")
-            # 日志要同步打到console
-            epoch = int(epoch)
-            self.console.append(f"epoch {epoch:04d} loss {loss:.4f} acc {acc*100:.2f}")
+            data = dict(loss=loss, acc=acc)
         else:
-            self.console.append(line)
-            self.epoch += 1
             if "nGT" not in line:
                 return
             if (1 + self.epoch) % self.update_interval() != 0:  # 没到更新周期。
                 return
             data = parse_logline(line, METRICS_MAP)
             print(f"解析后的数据：{data}")
-            for key in self.plt_keys():
-                self.plt_data[key].append(data[key])
-                self.plt[key].setData(self.plt_data[key], pen=self.plt_pen[key])
+
+        for key in self.plt_keys():
+            self.plt_data[key].append(data[key])
+            self.plt_items[key].setData(self.plt_data[key], pen=self.plt_pen[key])
 
     def handle_train_interrupt(self, status):
         "训练线程：已经收到interrupt信号，run返回。"
@@ -817,18 +828,6 @@ class MyWindow(QtWidgets.QMainWindow):
         t.deleteLater()
         self.train_thread = None
         self.is_training = False
-
-    def clear_plot(self):
-        "辅助函数：清空绘图有关的变量"
-        if self.is_mocked():
-            self.plt_loss.clear()
-            self.plt_metrics.clear()
-            self.loss_list.clear()
-            self.metrics_list.clear()
-        else:
-            for key in self.plt_keys():
-                self.plt[key].clear()
-                self.plt_data[key].clear()
 
     def run_progress_bar(self, progress_bar, total_steps=5, step_time=0.1):
         progress_bar.reset()
@@ -887,7 +886,7 @@ class MyWindow(QtWidgets.QMainWindow):
         return "/home/liao/codes/Object_Detection_UI/images/input"
 
     def init_filepath_setter(
-        self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
+            self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
     ):
         self.config_changed = True
 
