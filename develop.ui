@@ -1263,7 +1263,7 @@
        </palette>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
@@ -3215,7 +3215,7 @@
                        <string notr="true">background-color: rgb(207, 207, 207);</string>
                       </property>
                       <property name="text">
-                       <string>/home/liao/anaconda3/envs/python27/bin/python</string>
+                       <string>/home/liao/.conda/envs/python27/bin/python</string>
                       </property>
                       <property name="cursorPosition">
                        <number>0</number>
@@ -5772,8 +5772,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>698</width>
-               <height>286</height>
+               <width>284</width>
+               <height>88</height>
               </rect>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout_16">

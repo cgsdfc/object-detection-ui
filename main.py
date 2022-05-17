@@ -8,8 +8,6 @@ import subprocess
 import time
 from collections import defaultdict
 from pathlib import Path as P
-# from vis import draw_anchor_box
-import  cv2
 
 # import vis
 import pyqtgraph as pg
@@ -29,7 +27,7 @@ from Ui_develop import *
 
 # import numpy as np
 
-MOCKED_TRAIN = True
+MOCKED_TRAIN = False
 MOCKED_OBJDET = True
 
 CODES_DIR = "/home/liao/codes"
@@ -383,6 +381,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.fewtune_data_config = self.ui.le_data_config_fewtune.text
         self.fewtune_model_path = self.ui.le_model_path_fewtune.text
         self.console = self.ui.te_train_logging
+        self.console.setReadOnly(True)
         self.train_mode_raw = self.ui.comboBox_train_mode.currentText
 
         # 配置面板
@@ -1001,8 +1000,9 @@ class MyWindow(QtWidgets.QMainWindow):
                 QMessageBox.warning(self, "错误", f"{name} 的值不能为空。")
                 ok = False
             # 最初输入的路径可能不存在，但如果是Mocked就无所谓了。
-            if not MOCKED_TRAIN and not os.path.exists(path):
-                QMessageBox.warning(self, "错误", f"{name} 的路径不存在。")
+            # if not MOCKED_TRAIN and not os.path.exists(path):
+            #     QMessageBox.warning(self, "错误", f"{name} 的路径不存在。")
+            #     ok = False
 
         for name, value in self.get_config_paths().items():
             check_filepath(name, value)
