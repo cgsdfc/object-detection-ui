@@ -8,6 +8,7 @@ import subprocess
 import time
 from collections import defaultdict
 from pathlib import Path as P
+from vis import draw_anchor_box
 
 import pyqtgraph as pg
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -193,7 +194,7 @@ class TrainThreadMocked(TrainThreadBase):
                 self.train_interrupt_signal.emit(random_bool())
                 return
             if is_train_step_line(line):
-                self.msleep(1000) # 模拟一个训练步的耗时。
+                self.msleep(1000)  # 模拟一个训练步的耗时。
             print("训练线程发送日志")
             self.train_step_signal.emit(line)
 
@@ -276,11 +277,39 @@ class TrainThread(TrainThreadBase):
         self.train_end_signal.emit(p.returncode)
 
 
-class ObjdetThread(QThread):
-    start_signal = pyqtSignal(bool)
+class ObjdetThreadBase(QThread):
+    start_signal = pyqtSignal(bool)  # 是否正常启动了
+    result_signal = pyqtSignal(list)  # 返回输出图像的路径的列表（前提是正常启动了）
 
-class ObjdetThreadMocked(ObjdetThread):
-    pass
+
+class ObjdetThread(ObjdetThreadBase):
+    def __init__(self, input_image_list: list):
+        super(ObjdetThreadMocked, self).__init__()
+        self.input_image_list = input_image_list
+        assert all(map(P.exists, input_image_list))
+
+
+class ObjdetThreadMocked(ObjdetThreadBase):
+    "Mocked 的目标检测后台线程"
+    def __init__(self, input_image_list: list):
+        super(ObjdetThreadMocked, self).__init__()
+        self.input_image_list = input_image_list
+        assert all(map(P.exists, input_image_list))
+        assert output_image_dir().is_dir()
+        print(self.__class__.__name__)
+
+    def run(self) -> None:
+        start_ok = random_bool()
+        self.start_signal.emit(start_ok)
+        if not start_ok:
+            print(f'目标检测线程失败')
+            return
+        result = []
+        for input_image in self.input_image_list:
+            output_image_path = output_image_dir().joinpath(input_image.name)
+            result.append(output_image_path)
+
+        self.result_signal.emit(result)
 
 
 class ObjdetImagePanel:

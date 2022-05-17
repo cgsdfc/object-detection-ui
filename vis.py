@@ -12,7 +12,8 @@ import tqdm
 # output_path = "可时化后保存路径"
 
 
-def draw_anchor_box(raw_images_path, res_path, output_path, conf_thresh=0.3, vis_classes=None, verbose=False):
+def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, verbose=False, raw_images_path=None,
+                    raw_images_list=None):
     """给输入的图像画上检测框，根据模型的输出结果。输入图像必须是jpg格式。
 
     raw_images_path：存有原始输入图像的路径。
@@ -24,9 +25,14 @@ def draw_anchor_box(raw_images_path, res_path, output_path, conf_thresh=0.3, vis
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
 
+    assert (raw_images_path is None) ^ (raw_images_list is None)
+    if raw_images_list is None:  # 支持直接输入路径列表。
+        assert  raw_images_path is not None
+        raw_images_list = list(P(raw_images_path).glob('*.jpg'))
+
     # 为什么要拷贝呢？因为这些图片是反复读入修改的，框要画很多次。
-    for name in [name for name in os.listdir(raw_images_path) if name.endswith(".jpg")]:
-        copyfile(os.path.join(raw_images_path, name), os.path.join(output_path, name))
+    for p in raw_images_list:
+        copyfile(str(p), str(P(output_path).joinpath(p.name)))
 
     if vis_classes is None:
         vis_classes = ["airplane", "ship"]
@@ -69,8 +75,13 @@ def draw_anchor_box(raw_images_path, res_path, output_path, conf_thresh=0.3, vis
 
 
 if __name__ == '__main__':
+    raw_images_path = '/home/liao/codes/FSODM/dataset/NWPU/evaluation/images'
+    from pathlib import Path as P
+
+    raw_images_list = list(P(raw_images_path).glob('*.jpg'))
+
     draw_anchor_box(
-        raw_images_path='/home/liao/codes/FSODM/dataset/NWPU/evaluation/images',
+        raw_images_list=raw_images_list,
         res_path='/home/liao/codes/Results/results/nwpu_p_10shot_novel0_neg0/ene000050',
         output_path='/home/liao/codes/Object_Detection_UI/test_images/output2'
     )
