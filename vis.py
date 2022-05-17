@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 from joblib import Parallel, delayed
 
+
 # conf_thresh=0.3
 # raw_images_path = "测图片路径"
 # res_path = "检测结果路径"
@@ -31,9 +32,11 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
     conf_thresh: 置信度阈值，只有超过这个值才会被认为是合法的框。
     vis_classes: 要显示的类别，默认只会显示airplane和ship。
     """
+
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
 
+    # 处理两种输入，list和path。
     assert (raw_images_path is None) ^ (raw_images_list is None)
     if raw_images_list is None:  # 支持直接输入路径列表。
         assert raw_images_path is not None
@@ -43,7 +46,7 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
     result = []
     for p in raw_images_list:
         pnew = P(output_path).joinpath(p.name)
-        copyfile(str(p), str(pnew))
+        # copyfile(str(p), str(pnew))
         result.append(pnew)
 
     if vis_classes is None:
@@ -83,10 +86,9 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
                     # 文件不存在，说明这个文件不需要可视化。
                     continue
                 box = [x_min, y_min, x_max, y_max]
-                images_to_boxes[img_name].append((box, cls))
+                images_to_boxes[img_name].append((box, cls, conf))
 
-    print(images_to_boxes)
-
+    # print(images_to_boxes)
     for input_image in tqdm.tqdm(raw_images_list):
         # img = cv2.imread(input_image, cv2.IMREAD_COLOR)
         img_name = input_image.name
@@ -94,14 +96,17 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
         box_list = images_to_boxes[img_name]
         image = plt.imread(input_image)
         fig = plt.imshow(image)
-
-        for box, cls in box_list:
+        for box, cls, conf in box_list:
             rect = bbox_to_rect(box, color[cls])
             fig.axes.add_patch(rect)
             fig.axes.text(rect.xy[0] + 24, rect.xy[1] + 10, f'{cls} {conf}',
                           va='center', ha='center', fontsize=10, color=color[cls])
 
-        plt.savefig(output_image)
+        plt.xticks([])  # 去掉x轴
+        plt.yticks([])  # 去掉y轴
+        plt.axis('off')  # 去掉坐标轴
+        plt.savefig(output_image, bbox_inches='tight', transparent=True)
+        # plt.show()
         plt.close()
         # cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color[cls], thickness=2, lineType=8)
         # cv2.putText(img, cls + " " + str(conf), (x_min - 5, y_min - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
@@ -112,16 +117,13 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
 
 
 if __name__ == '__main__':
-    raw_images_path = '/home/liao/codes/FSODM/dataset/NWPU/evaluation/images'
+    raw_images_path = '/home/liao/codes/Object_Detection_UI/test_images/input'
     from pathlib import Path as P
 
     raw_images_list = list(P(raw_images_path).glob('*.jpg'))
 
     result = draw_anchor_box(
         raw_images_list=raw_images_list,
-        res_path='/home/liao/codes/Results/results/nwpu_p_10shot_novel0_neg0/ene000050',
+        res_path='/home/liao/codes/Results/results/nwpu_p_30shot_novel0_neg0/ene000050',
         output_path='/home/liao/codes/Object_Detection_UI/test_images/output3'
     )
-
-    for p in result:
-        print(p)
