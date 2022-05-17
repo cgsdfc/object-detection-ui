@@ -53,6 +53,11 @@ def input_image_dir():
     return str(THIS_PROJECT_DIR / 'test_images' / 'input')
 
 
+def detect_result_dir():
+    res_path = '/home/liao/codes/Results/results/nwpu_p_10shot_novel0_neg0/ene000050'
+    return res_path
+
+
 def train_log_paths():
     "用来mocked的训练日志"
     train_log = THIS_PROJECT_DIR / 'train_log'
@@ -269,6 +274,13 @@ class TrainThread(TrainThreadBase):
         # 判断返回码状态
         print(f"训练线程：进程返回值：{p.returncode}")
         self.train_end_signal.emit(p.returncode)
+
+
+class ObjdetThread(QThread):
+    start_signal = pyqtSignal(bool)
+
+class ObjdetThreadMocked(ObjdetThread):
+    pass
 
 
 class ObjdetImagePanel:

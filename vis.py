@@ -24,6 +24,10 @@ def draw_anchor_box(raw_images_path, res_path, output_path, conf_thresh=0.3, vis
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
 
+    # 为什么要拷贝呢？因为这些图片是反复读入修改的，框要画很多次。
+    for name in [name for name in os.listdir(raw_images_path) if name.endswith(".jpg")]:
+        copyfile(os.path.join(raw_images_path, name), os.path.join(output_path, name))
+
     if vis_classes is None:
         vis_classes = ["airplane", "ship"]
         color = {"airplane": (0, 215, 255), "ship": (48, 48, 255)}
@@ -53,20 +57,15 @@ def draw_anchor_box(raw_images_path, res_path, output_path, conf_thresh=0.3, vis
                 if conf < conf_thresh:
                     continue
 
-                input_image = os.path.join(raw_images_path, img_name)
-                if not os.path.isfile(input_image):
-                    raise ValueError(f'文件不存在：{input_image}')
-
-                output_image = os.path.join(output_path, img_name)
-                if verbose:
-                    print(f'输入图像：{input_image}')
-                    print(f'输出图像：{output_image}')
-
+                input_image = os.path.join(output_path, img_name)
+                if not os.path.exists(input_image):
+                    # 文件不存在，说明这个文件不需要可视化。
+                    continue
                 img = cv2.imread(input_image, cv2.IMREAD_COLOR)
                 cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color[cls], thickness=2, lineType=8)
                 cv2.putText(img, cls + " " + str(conf), (x_min - 5, y_min - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale=0.75, color=color[cls], thickness=2, lineType=8)
-                cv2.imwrite(output_image, img)
+                cv2.imwrite(input_image, img)
 
 
 if __name__ == '__main__':
