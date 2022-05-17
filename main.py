@@ -39,6 +39,7 @@ MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/FSODM/vis/results")
 
 
 class StringConstants:
+    "字符串常量，防止编码错误"
     precision = "precision"
     recall = "recall"
     recall50 = "recall50"
@@ -47,6 +48,7 @@ class StringConstants:
 
 
 class LoglineParseResult:
+    "训练日志行的原始解析结果，字段"
     precision = None
     recall50 = None
     recall75 = None
@@ -59,7 +61,7 @@ class LoglineParseResult:
     total = None
     conf = None
 
-
+# 将训练日志的字段和我们想要的字段做映射。
 METRICS_MAP = {
     StringConstants.loss: StringConstants.total,
     StringConstants.recall: StringConstants.recall50,
@@ -68,6 +70,7 @@ METRICS_MAP = {
 
 
 def parse_logline(line: str, map=None):
+    "解析一行训练日志，若map存在，将获取特定字段并且重命名。"
     line = line.split(", ")
     ans = LoglineParseResult()
     ans.precision = float(line[1].split()[-1])
@@ -91,10 +94,12 @@ def parse_logline(line: str, map=None):
 
 
 class TrainMode(enum.Enum):
+    "训练模式的enum版本"
     pretrain = 0
     fewtune = 1
 
 
+# UI上的字符串映射到训练模式。
 TEXT_TO_TRAIN_MODE = {
     "预训练": TrainMode.pretrain,
     "小样本微调": TrainMode.fewtune,
@@ -105,21 +110,19 @@ def python_dir():
     return "/home/liao/anaconda3/envs"
 
 
-class EmittingStream(QtCore.QObject):
-    textWritten = QtCore.pyqtSignal(str)
-
-    def write(self, text):
-        self.textWritten.emit(str(text))
-
-
 class TrainThreadBase(QThread):
+    # 拉起训练进程后发送此信号，反馈【是否拉起成功】
     train_start_signal = pyqtSignal(bool)
+    # 收到训练进程的一行日志后发送此信号，传输【训练日志】
     train_step_signal = pyqtSignal(str)
+    # 训练进程退出后发送此信号，反馈【进程退出状态码】
     train_end_signal = pyqtSignal(int)
-    train_interrupt_signal = pyqtSignal()
+    # 收到调用方的中断请求，并且处理完毕后，发送此信号。
+    train_interrupt_signal = pyqtSignal(bool)
 
 
 class TrainThreadMocked(TrainThreadBase):
+    "Mocked 版训练线程，提供测试UI的数据"
     def __init__(self, cmd: list, cwd: str) -> None:
         super().__init__()
         self.epochs = 20
@@ -133,7 +136,7 @@ class TrainThreadMocked(TrainThreadBase):
         for epoch in range(self.epochs):
             if self.isInterruptionRequested():
                 print(f"调用方请求中断")
-                self.train_interrupt_signal.emit()
+                self.train_interrupt_signal.emit(True)
                 return
             self.msleep(1000)
             acc = random.random()
@@ -148,63 +151,44 @@ class TrainThreadMocked(TrainThreadBase):
 
 
 class TrainThread(TrainThreadBase):
+    "训练线程的实现，负责管理一个训练进程的启动、抓取日志、中断清理，作为UI线程和训练进程之间的通信桥梁。"
+
     def __init__(self, cmd: list, cwd: str) -> None:
+        "cmd：要运行的命令；cwd：运行命令所在的目录。"
         super().__init__()
         if isinstance(cmd, str):
             cmd = shlex.split(cmd)
         self.cmd = cmd
         assert os.path.isdir(cwd)
         self.cwd = cwd
+        # 到run的时候才拉起进程。
         self.p: subprocess.Popen = None  # 进程实例
 
     def handle_interrupt(self):
-        "调用方向我发起中断请求。"
+        "调用方向我发起中断请求。要杀死训练进程，并且保证其清理掉子进程，否则会把显存用完。返回是否进行了一次中断处理。"
         if not self.isInterruptionRequested():
             return False
+        status = True
         if self.p is not None:
             print(f"正在杀死进程：{self.p.pid}")
             try:
-                # self.p.kill()
                 # 注意：必须用 KeyboardInterrupt 来杀死进程，即 SIGINT 2
                 # 他才会做清理，如果是一般的kill（SIGKILL），他是不做任何清理的。
                 # p.kill() p.terminate() 都是不行的。
                 self.p.send_signal(signal.SIGINT)
                 self.p.wait()
             except Exception as e:
+                status = False
                 print(f"杀死进程时抛出异常：{e}")
             else:
                 print(f"进程杀死成功")
 
-        self.train_interrupt_signal.emit()
+        # 只要收到了中断请求，就必须发回响应。
+        self.train_interrupt_signal.emit(status)
         return True
 
-    def python_path(self):
-        return self.cmd[0]
-
-    def kill_all_train_processes(self):
-        to_kill: list[psutil.Process] = []
-
-        for p in psutil.process_iter(
-            attrs=["exe", "cwd", "cmdline"]
-        ):  # 注意：不能访问所有的属性，权限问题。
-            try:
-                exe = p.exe()
-                cwd = p.cwd()
-                # cmdline = p.cmdline()
-            except:
-                continue
-
-            if exe == self.python_path() and cwd == self.cwd:
-                print(f"发现残留进程：{p.pid}")
-                # cmdline = " ".join(p.cmdline())[:40]
-                # print(f"发现残留进程：{p.pid} {cmdline}")
-                to_kill.append(p)
-
-        print(f"## {len(to_kill)}")
-
-        for p in to_kill:
-            print(f"杀死进程 {p.pid}")
-            os.kill(p.pid, signal.SIGKILL)
+    def start_process(self):
+        assert self.p is None
 
     def run(self):
         try:
@@ -241,6 +225,7 @@ class TrainThread(TrainThreadBase):
 
 
 class ObjdetImagePanel:
+    "多图检测的一个图片面板。"
     def __init__(self, label: QLabel) -> None:
         self.label = label
         self.input_image = None
@@ -802,9 +787,9 @@ class MyWindow(QtWidgets.QMainWindow):
                 self.plt_data[key].append(data[key])
                 self.plt[key].setData(self.plt_data[key], pen=self.plt_pen[key])
 
-    def handle_train_interrupt(self):
+    def handle_train_interrupt(self, status):
         "训练线程：已经收到interrupt信号，run返回。"
-        print("线程被中断，已经退出，善后处理")
+        print(f"线程被中断，已经退出，善后处理，中断状态码：{status}")
         self.stop_train_thread()
         self.run_progress_bar(self.ui.progressBar_train)
         self.console.append("-" * 10)
@@ -865,6 +850,9 @@ class MyWindow(QtWidgets.QMainWindow):
             if not path:
                 QMessageBox.warning(self, "错误", f"{name} 的值不能为空。")
                 ok = False
+            # 最初输入的路径可能不存在，但如果是Mocked就无所谓了。
+            if not MOCKED_TRAIN and not os.path.exists(path):
+                QMessageBox.warning(self, "错误", f"{name} 的路径不存在。")
 
         for name, value in self.get_config_paths().items():
             check_filepath(name, value)
