@@ -39,6 +39,7 @@ MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/Results/vis/conf0-0.5/0.5/nwpu_p_3
 
 THIS_PROJECT_DIR = P(__file__).parent
 
+
 # print(f'UI项目路径：{THIS_PROJECT_DIR}')
 
 
@@ -291,8 +292,9 @@ class ObjdetThread(QThread):
 
     def __init__(self, input_image_list: list, mode: ObjdetMode):
         super().__init__()
-        self.input_image_list = input_image_list
+        input_image_list = list(map(P, input_image_list))
         assert all(map(P.exists, input_image_list))
+        self.input_image_list = input_image_list
         self.mode = mode
         self.mode_to_method = {
             ObjdetMode.copy_output: self.run_copy_output,
@@ -302,6 +304,9 @@ class ObjdetThread(QThread):
         if self.mode == ObjdetMode.run_vis:
             self.output_dir = THIS_PROJECT_DIR / 'test_images' / 'output2'
             self.output_dir.mkdir(exist_ok=True)
+
+    def run_model(self):
+        raise NotImplementedError
 
     def run_copy_output(self):
         "把预先生成的图像作为输出"
@@ -610,15 +615,16 @@ class MyWindow(QtWidgets.QMainWindow):
         input_image_list = []
         self.input_image_ids = []
         for i, panel in enumerate(self.image_panel_list):
-            if panel.input_image is None: # 用户没有输入
+            if panel.input_image is None:  # 用户没有输入
                 continue
-            if panel.output_image is not None: # 不要重复检测
+            if panel.output_image is not None:  # 不要重复检测
                 continue
             input_image_list.append(panel.input_image)
             self.input_image_ids.append(i)
 
         if not input_image_list:
-            return # 所有的输入图像都检测过了，没有要检测的。
+            print(f'所有图像都检测过了，没有需要检测的图像')
+            return  # 所有的输入图像都检测过了，没有要检测的。
         self.start_thread_objdet(input_image_list, self.handle_detection_result_batch)
 
     def handle_detection_result_batch(self, result):
@@ -787,6 +793,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def show_image(self, image_path, label: QLabel):
         "将一个图片路径显示到label上面"
+        image_path = str(image_path)
         image = QtGui.QPixmap(image_path).scaled(label.width(), label.height())
         if image.isNull():
             return False
