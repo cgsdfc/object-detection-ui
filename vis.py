@@ -27,12 +27,15 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
 
     assert (raw_images_path is None) ^ (raw_images_list is None)
     if raw_images_list is None:  # 支持直接输入路径列表。
-        assert  raw_images_path is not None
+        assert raw_images_path is not None
         raw_images_list = list(P(raw_images_path).glob('*.jpg'))
 
     # 为什么要拷贝呢？因为这些图片是反复读入修改的，框要画很多次。
+    result = []
     for p in raw_images_list:
-        copyfile(str(p), str(P(output_path).joinpath(p.name)))
+        pnew = P(output_path).joinpath(p.name)
+        copyfile(str(p), str(pnew))
+        result.append(pnew)
 
     if vis_classes is None:
         vis_classes = ["airplane", "ship"]
@@ -73,6 +76,8 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
                             fontScale=0.75, color=color[cls], thickness=2, lineType=8)
                 cv2.imwrite(input_image, img)
 
+    return result
+
 
 if __name__ == '__main__':
     raw_images_path = '/home/liao/codes/FSODM/dataset/NWPU/evaluation/images'
@@ -80,8 +85,11 @@ if __name__ == '__main__':
 
     raw_images_list = list(P(raw_images_path).glob('*.jpg'))
 
-    draw_anchor_box(
+    result = draw_anchor_box(
         raw_images_list=raw_images_list,
         res_path='/home/liao/codes/Results/results/nwpu_p_10shot_novel0_neg0/ene000050',
         output_path='/home/liao/codes/Object_Detection_UI/test_images/output2'
     )
+
+    for p in result:
+        print(p)

@@ -8,8 +8,9 @@ import subprocess
 import time
 from collections import defaultdict
 from pathlib import Path as P
-from vis import draw_anchor_box
+# from vis import draw_anchor_box
 
+import vis
 import pyqtgraph as pg
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QIntValidator
@@ -54,9 +55,9 @@ def input_image_dir():
     return str(THIS_PROJECT_DIR / 'test_images' / 'input')
 
 
-def detect_result_dir():
+def detection_result_dir():
     res_path = '/home/liao/codes/Results/results/nwpu_p_10shot_novel0_neg0/ene000050'
-    return res_path
+    return P(res_path)
 
 
 def train_log_paths():
@@ -277,39 +278,82 @@ class TrainThread(TrainThreadBase):
         self.train_end_signal.emit(p.returncode)
 
 
+class ObjdetMode(enum.Enum):
+    copy_output = 0  # 复制已有的输出图像
+    run_vis = 1  # 运行 vis 代码，对输入图像进行可视化
+    run_model = 2  # 运行模型。
+
+
 class ObjdetThreadBase(QThread):
-    start_signal = pyqtSignal(bool)  # 是否正常启动了
-    result_signal = pyqtSignal(list)  # 返回输出图像的路径的列表（前提是正常启动了）
+    detection_start_signal = pyqtSignal(bool)  # 是否正常启动了
+    detection_end_signal = pyqtSignal(bool)  # 是否正常结束了
+    # 可以传输多次。
+    detection_result_signal = pyqtSignal(list)  # 返回输出图像的路径的列表（前提是正常启动了）
 
 
 class ObjdetThread(ObjdetThreadBase):
-    def __init__(self, input_image_list: list):
-        super(ObjdetThreadMocked, self).__init__()
-        self.input_image_list = input_image_list
-        assert all(map(P.exists, input_image_list))
-
-
-class ObjdetThreadMocked(ObjdetThreadBase):
     "Mocked 的目标检测后台线程"
-    def __init__(self, input_image_list: list):
-        super(ObjdetThreadMocked, self).__init__()
+
+    def __init__(self, input_image_list: list, mode: ObjdetMode):
+        super().__init__()
         self.input_image_list = input_image_list
         assert all(map(P.exists, input_image_list))
-        assert output_image_dir().is_dir()
-        print(self.__class__.__name__)
+        self.mode = mode
+        self.mode_to_method = {
+            ObjdetMode.copy_output: self.run_copy_output,
+            ObjdetMode.run_vis: self.run_vis,
+            ObjdetMode.run_model: self.run_model,
+        }
+        if self.mode == ObjdetMode.run_vis:
+            self.output_dir = THIS_PROJECT_DIR / 'test_images' / 'output2'
+            self.output_dir.mkdir(exist_ok=True)
 
-    def run(self) -> None:
-        start_ok = random_bool()
-        self.start_signal.emit(start_ok)
-        if not start_ok:
-            print(f'目标检测线程失败')
+    def run_copy_output(self):
+        "把预先生成的图像作为输出"
+        status = output_image_dir().is_dir()
+        self.detection_result_signal.emit(status)
+        if not status:
+            print(f'输出图像目录不存在：{output_image_dir()}')
             return
         result = []
         for input_image in self.input_image_list:
             output_image_path = output_image_dir().joinpath(input_image.name)
+            if not output_image_path.exists():
+                print(f'输出图像不存在：{output_image_path}')
+                self.detection_end_signal.emit(False)
+                return
             result.append(output_image_path)
 
-        self.result_signal.emit(result)
+        self.detection_end_signal.emit(True)
+        self.detection_result_signal.emit(result)
+
+    def run_vis(self):
+        "把模型的输出文本文件结合输入图像进行可视化后输出"
+        status = detection_result_dir().is_dir()
+        self.detection_result_signal.emit(status)
+        if not status:
+            print(f'模型预测输出目录不存在：{detection_result_dir()}')
+            return
+        try:
+            result = vis.draw_anchor_box(
+                res_path=detection_result_dir(),
+                output_path=str(self.output_dir),
+                raw_images_list=self.input_image_list,
+            )
+        except Exception as e:
+            status = False
+            print(f'调用 vis 脚本失败：{e}')
+            return
+        else:
+            status = True
+        finally:
+            self.detection_end_signal.emit(status)
+        self.detection_result_signal.emit(result)
+
+    def run(self) -> None:
+        print(f'目标检测线程启动')
+        self.mode_to_method[self.mode]()
+        print(f'目标检测线程退出')
 
 
 class ObjdetImagePanel:
@@ -489,15 +533,16 @@ class MyWindow(QtWidgets.QMainWindow):
         "单图识别：初始化"
         self.input_image_path = None
         self.output_image_path = None
+        self.thread_objdet = None
         self.ui.progressBar_objdet.reset()
-
         self.ui.pb_objdet_open.clicked.connect(self.open_objdet)
-        self.ui.pb_objdet_detect.clicked.connect(self.run_objdet)
+        self.ui.pb_objdet_detect.clicked.connect(self.detect_objdet)
         self.ui.pb_objdet_export.clicked.connect(self.export_objdet)
         self.ui.pb_objdet_clear.clicked.connect(self.clear_objdet)
 
     def init_batchdet_tab(self):
         "多图识别：初始化"
+        self.thread_batchdet = None
         self.ui.progressBar_batchdet.reset()
         self.ui.pb_batchdet_open.clicked.connect(self.open_batchdet)
         self.ui.pb_batchdet_detect.clicked.connect(self.detect_batchdet)
@@ -695,7 +740,7 @@ class MyWindow(QtWidgets.QMainWindow):
         else:
             print(f"文件导出成功：{dst_file}")
 
-    def run_objdet(self):
+    def detect_objdet(self):
         "单图目标检测"
         # 没有输入图像。
         if self.input_image_path is None:
