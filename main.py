@@ -34,9 +34,15 @@ MOCKED_OBJDET = True
 CODES_DIR = "/home/liao/codes"
 
 # PYTHON_INTERPRETER = "/home/liao/anaconda3/envs/python27/bin/python"
+# 目标检测结果的预生成目录。
+MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/Results/vis/conf0-0.5/0.5/nwpu_p_30shot_novel0_neg0")
 
-MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/FSODM/vis/results")
-
+def input_image_dir():
+    "选择输入图像的目录"
+    if MOCKED_OBJDET:
+        return "/home/liao/codes/Object_Detection_UI/images/input"
+    else:
+        return None
 
 def python_dir():
     "选择Python解析器的备选路径"
@@ -415,7 +421,6 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def init_objdet_tab(self):
         "单图识别：初始化"
-        self.is_mocked_objdet = True
         self.input_image_path = None
         self.output_image_path = None
         self.ui.progressBar_objdet.reset()
@@ -440,22 +445,25 @@ class MyWindow(QtWidgets.QMainWindow):
         self.NUM_BATCH = NUM_BATCH
 
     def total_input_images_batchdet(self):
+        "批量识别：当前输入图像的总数"
         total = sum(
             1 for panel in self.image_panel_list if panel.input_image is not None
         )
         return total
 
     def total_output_images_batchdet(self):
+        "批量识别：当前输出图像的总数"
         total = sum(
             1 for panel in self.image_panel_list if panel.output_image is not None
         )
         return total
 
     def open_batchdet(self):
+        "批量识别：打开输入图像"
         file_list, _ = QFileDialog.getOpenFileNames(
             self,
             f"请选择最多{self.NUM_BATCH}张图片",
-            directory=self.image_dir(),
+            directory=input_image_dir(),
             filter="*.jpg;;*.jpeg",
         )
         if not file_list:
@@ -484,7 +492,8 @@ class MyWindow(QtWidgets.QMainWindow):
             )
 
     def get_detection_result(self, input_image: P):
-        if self.is_mocked_objdet:
+        "获取目标检测的结果（单图）"
+        if MOCKED_OBJDET:
             output_image_path = MOCKED_IMAGE_RESULT_DIR.joinpath(input_image.name)
             assert output_image_path.exists()
             return str(output_image_path)
@@ -493,6 +502,7 @@ class MyWindow(QtWidgets.QMainWindow):
             return None
 
     def detect_batchdet(self):
+        "批量识别：进行识别"
         if not self.total_input_images_batchdet():
             QMessageBox.warning(self, "错误", "输入图像为空，请打开图像文件进行检测")
             return
@@ -550,7 +560,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def open_objdet(self):
         "单图识别：打开一张图像"
         image_file, _ = QFileDialog.getOpenFileName(
-            self, "打开图像", directory=self.image_dir(), filter="*.jpg;;*.jpeg;;"
+            self, "打开图像", directory=input_image_dir(), filter="*.jpg;;*.jpeg;;"
         )
         if not image_file:
             print("用户没有任何输入")
@@ -882,11 +892,9 @@ class MyWindow(QtWidgets.QMainWindow):
             return None
         return os.path.join(prj, "backup")
 
-    def image_dir(self):
-        return "/home/liao/codes/Object_Detection_UI/images/input"
 
     def init_filepath_setter(
-            self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
+        self, button: QPushButton, lineedit: QLineEdit, isdir=0, directory=None,
     ):
         self.config_changed = True
 
