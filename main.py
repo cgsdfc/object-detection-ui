@@ -290,10 +290,9 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.comboBox_train_mode.currentTextChanged.connect(
             lambda: print(f"训练模式改变：{self.train_mode()}")
         )
-        # 训练开始按钮
         self.ui.pb_train_start.clicked.connect(self.train_start)
-        # 训练终止按钮
         self.ui.pb_train_stop.clicked.connect(self.train_stop)
+        self.ui.pb_train_clear.clicked.connect(self.train_clear)
         # 进度条。
         self.ui.progressBar_train.reset()
         self.train_thread = None
@@ -716,6 +715,16 @@ class MyWindow(QtWidgets.QMainWindow):
         else:
             cmd = self.fewtune_command()
         return cmd
+
+    def train_clear(self):
+        "训练面板：重置训练状态和UI"
+        if self.is_training:
+            QMessageBox.warning(self, "错误", f'正在训练中，无法重置，请先停止当前训练')
+            return
+        print(f'重置训练面板，删除所有数据')
+        self.clear_plot()
+        self.console.clear()
+        self.stop_train_thread()
 
     def train_start(self):
         "用户：要开始训练，启动训练进程"
