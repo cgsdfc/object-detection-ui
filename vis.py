@@ -1,4 +1,3 @@
-# import cv2
 import os
 from shutil import copyfile
 import numpy as np
@@ -7,22 +6,16 @@ import tqdm
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from joblib import Parallel, delayed
+import cv2
+from pathlib import Path as P
 
 
-# conf_thresh=0.3
-# raw_images_path = "测图片路径"
-# res_path = "检测结果路径"
-# output_path = "可时化后保存路径"
-
-def bbox_to_rect(bbox, color):  # 本函数已保存在d2lzh包中方便以后使用
-    # 将边界框(左上x, 左上y, 右下x, 右下y)格式转换成matplotlib格式：
-    # ((左上x, 左上y), 宽, 高)
-    return plt.Rectangle(
-        xy=(bbox[0], bbox[1]), width=bbox[2] - bbox[0], height=bbox[3] - bbox[1],
-        fill=False, edgecolor=color, linewidth=2)
-
-
-def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, verbose=False, raw_images_path=None,
+def draw_anchor_box(res_path,
+                    output_path,
+                    conf_thresh=0.3,
+                    vis_classes=None,
+                    verbose=False,
+                    raw_images_path=None,
                     raw_images_list=None):
     """给输入的图像画上检测框，根据模型的输出结果。输入图像必须是jpg格式。
 
@@ -42,7 +35,6 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
         assert raw_images_path is not None
         raw_images_list = list(P(raw_images_path).glob('*.jpg'))
 
-    # 为什么要拷贝呢？因为这些图片是反复读入修改的，框要画很多次。
     result = []
     for p in raw_images_list:
         pnew = P(output_path).joinpath(p.name)
@@ -51,13 +43,11 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
 
     if vis_classes is None:
         vis_classes = ["airplane", "ship"]
-        # color = {"airplane": (0, 215, 255), "ship": (48, 48, 255)}
-        color = {"airplane": 'yellow', "ship": 'red'}
+        color = {"airplane": (0, 215, 255), "ship": (48, 48, 255)}
     else:
         color = {cls: tuple(np.random.randint(low=0, high=256, size=[3])) for cls in vis_classes}
 
-    print(f'可视化类别：{vis_classes}')
-    print(f'类别的颜色：{color}')
+    print(f'输出路径：{output_path}')
 
     vis_res_path = [os.path.join(res_path, res_name) for res_name in os.listdir(res_path) if
                     res_name.split(".")[0].split("_")[-1] in vis_classes]
@@ -68,7 +58,6 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
 
     for cls, path in zip(vis_classes, vis_res_path):
         print(f'可视化类别：{cls} 模型输出：{path}')
-
         with open(path, "r") as res_file:
             lines = res_file.readlines()
             for line in lines:
@@ -88,38 +77,25 @@ def draw_anchor_box(res_path, output_path, conf_thresh=0.3, vis_classes=None, ve
                 box = [x_min, y_min, x_max, y_max]
                 images_to_boxes[img_name].append((box, cls, conf))
 
-    # print(images_to_boxes)
     for input_image in tqdm.tqdm(raw_images_list):
-        # img = cv2.imread(input_image, cv2.IMREAD_COLOR)
         img_name = input_image.name
         output_image = os.path.join(output_path, img_name)
         box_list = images_to_boxes[img_name]
-        image = plt.imread(input_image)
-        fig = plt.imshow(image)
+        img = cv2.imread(str(input_image), cv2.IMREAD_COLOR)
+
         for box, cls, conf in box_list:
-            rect = bbox_to_rect(box, color[cls])
-            fig.axes.add_patch(rect)
-            fig.axes.text(rect.xy[0] + 24, rect.xy[1] + 10, f'{cls} {conf}',
-                          va='center', ha='center', fontsize=10, color=color[cls])
+            [x_min, y_min, x_max, y_max] = box
+            cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color[cls], thickness=2, lineType=8)
+            cv2.putText(img, cls + " " + str(conf), (x_min - 5, y_min - 5),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.75, color=color[cls], thickness=2, lineType=8)
 
-        plt.xticks([])  # 去掉x轴
-        plt.yticks([])  # 去掉y轴
-        plt.axis('off')  # 去掉坐标轴
-        plt.savefig(output_image, bbox_inches='tight', transparent=True)
-        # plt.show()
-        plt.close()
-        # cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color[cls], thickness=2, lineType=8)
-        # cv2.putText(img, cls + " " + str(conf), (x_min - 5, y_min - 5), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-        #             fontScale=0.75, color=color[cls], thickness=2, lineType=8)
-        # cv2.imwrite(input_image, img)
-
+        cv2.imwrite(output_image, img)
     return result
 
 
 if __name__ == '__main__':
     raw_images_path = '/home/liao/codes/Object_Detection_UI/test_images/input'
-    from pathlib import Path as P
-
     raw_images_list = list(P(raw_images_path).glob('*.jpg'))
 
     result = draw_anchor_box(
