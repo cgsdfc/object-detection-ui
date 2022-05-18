@@ -91,15 +91,30 @@ def draw_anchor_box(res_path,
                         fontScale=0.75, color=color[cls], thickness=2, lineType=8)
 
         cv2.imwrite(output_image, img)
-    return result
+
+    return result, images_to_boxes
 
 
 if __name__ == '__main__':
     raw_images_path = '/home/liao/codes/Object_Detection_UI/test_images/input'
     raw_images_list = list(P(raw_images_path).glob('*.jpg'))
+    import json
 
-    result = draw_anchor_box(
+    # json.dump(
+    #     dict(raw_images_list=list(map(str, raw_images_list)),
+    #          res_path='/home/liao/codes/Results/results/nwpu_p_30shot_novel0_neg0/ene000050',
+    #          output_path='/home/liao/codes/Object_Detection_UI/test_images/output3', ),
+    #     P('/test_images/tmp/input_json.json').open('w'),
+    #     indent=4,
+    # )
+
+    result, images_to_boxes = draw_anchor_box(
         raw_images_list=raw_images_list,
         res_path='/home/liao/codes/Results/results/nwpu_p_30shot_novel0_neg0/ene000050',
-        output_path='/home/liao/codes/Object_Detection_UI/test_images/output3'
+        output_path='/home/liao/codes/Object_Detection_UI/test_images/tmp/output_images'
+    )
+    json.dump(
+        dict(result=list(map(str, result)), images_to_boxes=images_to_boxes),
+        P('./test_images/tmp/output_json.json').open('w'),
+        indent=4,
     )
