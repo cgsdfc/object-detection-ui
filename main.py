@@ -8,7 +8,7 @@ import subprocess
 import time
 import json
 import traceback
-from datetime import  datetime
+from datetime import datetime
 
 from collections import defaultdict
 from pathlib import Path as P
@@ -736,15 +736,12 @@ class MyWindow(QtWidgets.QMainWindow):
             QMessageBox.warning(self, "错误", "检测结果为空，请先输入一张图片进行检测")
             return
         output_image_path = P(self.output_image_path)
-        filename, filetype = QFileDialog.getSaveFileName(
-            self, "选择导出路径", filter=output_image_path.suffix, directory=export_dir(),
-        )
-        if not filename:
+        output_dir = QFileDialog.getExistingDirectory(self, "选择导出目录", directory=export_dir())
+        if not output_dir:
             print(f"用户取消了导出")
             return
-
-        print(f"文件名：{filename} 文件类型：{filetype}")
-        output_file = P(filename).with_suffix(filetype)
+        # 为了方便，文件名还是原来的文件名。
+        output_file = P(output_dir).joinpath(output_image_path.name)
         self.export_file(
             src_file=output_image_path,
             dst_file=output_file,
@@ -839,7 +836,7 @@ class MyWindow(QtWidgets.QMainWindow):
             return
         print(f'单图检测结果：{images_to_boxes}')
         assert len(images_to_boxes) == 1
-        self.output_image_box = dict.popitem(images_to_boxes)[1]
+        self.output_image_box = images_to_boxes
 
     def show_image(self, image_path, label: QLabel):
         "将一个图片路径显示到label上面"
