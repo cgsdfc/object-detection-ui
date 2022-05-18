@@ -1080,9 +1080,9 @@ class MyWindow(QtWidgets.QMainWindow):
                 QMessageBox.warning(self, "错误", f"{name} 的值不能为空。")
                 ok = False
             # 最初输入的路径可能不存在，但如果是Mocked就无所谓了。
-            # if not MOCKED_TRAIN and not os.path.exists(path):
-            #     QMessageBox.warning(self, "错误", f"{name} 的路径不存在。")
-            #     ok = False
+            if not MOCKED_TRAIN and not os.path.exists(path):
+                QMessageBox.warning(self, "错误", f"{name} 的路径不存在。")
+                ok = False
 
         for name, value in self.get_config_paths().items():
             check_filepath(name, value)

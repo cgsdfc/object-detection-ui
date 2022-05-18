@@ -1263,7 +1263,7 @@
        </palette>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
@@ -1719,7 +1719,7 @@
                        <string notr="true">background-color: rgb(207, 207, 207);</string>
                       </property>
                       <property name="text">
-                       <string>cfg/darknet_yolov3_spp.cfg</string>
+                       <string>/home/liao/codes/FSODM/cfg/darknet_yolov3_spp.cfg</string>
                       </property>
                       <property name="cursorPosition">
                        <number>0</number>
@@ -1746,7 +1746,7 @@
                        <string notr="true">background-color: rgb(207, 207, 207);</string>
                       </property>
                       <property name="text">
-                       <string>cfg/reweighting_net.cfg</string>
+                       <string>/home/liao/codes/FSODM/cfg/reweighting_net.cfg</string>
                       </property>
                       <property name="cursorPosition">
                        <number>0</number>
@@ -2206,7 +2206,7 @@
                        <string notr="true">background-color: rgb(207, 207, 207);</string>
                       </property>
                       <property name="text">
-                       <string>cfg/fewtune_nwpu_10shot.data</string>
+                       <string>/home/liao/codes/FSODM/cfg/fewtune_nwpu_10shot.data</string>
                       </property>
                       <property name="cursorPosition">
                        <number>0</number>
@@ -2233,7 +2233,7 @@
                        <string notr="true">background-color: rgb(207, 207, 207);</string>
                       </property>
                       <property name="text">
-                       <string>backup/metayolov3_nwpu_300_200_novel0_neg1/000400.weights</string>
+                       <string>/home/liao/codes/FSODM/backup/metayolov3_nwpu_300_200_novel0_neg1/000400.weights</string>
                       </property>
                       <property name="cursorPosition">
                        <number>0</number>
@@ -3188,7 +3188,7 @@
                        <string notr="true">background-color: rgb(207, 207, 207);</string>
                       </property>
                       <property name="text">
-                       <string>cfg/fewyolov3_nwpu.data</string>
+                       <string>/home/liao/codes/FSODM/cfg/fewyolov3_nwpu.data</string>
                       </property>
                       <property name="cursorPosition">
                        <number>0</number>
