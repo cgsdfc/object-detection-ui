@@ -546,6 +546,7 @@ class MyWindow(QtWidgets.QMainWindow):
         "单图识别：初始化"
         self.input_image_path = None
         self.output_image_path = None
+        self.output_image_box = None
         self.thread_objdet = None
         self.ui.progressBar_objdet.reset()
         self.ui.pb_objdet_open.clicked.connect(self.open_objdet)
@@ -647,13 +648,18 @@ class MyWindow(QtWidgets.QMainWindow):
         self.start_thread_objdet(input_image_list, self.handle_detection_result_batch)
 
     def handle_detection_result_batch(self, result):
-        result = result[StringConstants.result]
-        for i, output_image in zip(self.input_image_ids, result):
+        result_images = result[StringConstants.result]
+        images_to_boxes = result[StringConstants.images_to_boxes]
+        for i, output_image in zip(self.input_image_ids, result_images):
             panel = self.image_panel_list[i]
-            panel.output_image = output_image
+            panel.output_image = P(output_image)
             self.run_progress_bar(self.ui.progressBar_batchdet)
             self.show_image(output_image, panel.label)
             print(f"检测面板{i} 输出图像：{output_image}")
+            if images_to_boxes is None:
+                continue
+            panel.box_list = images_to_boxes[panel.output_image.name]
+            print(f'检测结果：{panel.box_list}')
 
     def export_batchdet(self):
         total = self.total_output_images_batchdet()
@@ -682,6 +688,13 @@ class MyWindow(QtWidgets.QMainWindow):
                 dst_file=output_file,
                 progress_bar=self.ui.progressBar_batchdet,
             )
+            if panel.box_list is None:
+                continue  # 不支持锚框导出。
+            output_file_box = output_file.with_suffix('.txt')
+            print(f'导出锚框文件：{output_file_box}')
+            with output_file_box.open('w') as f:
+                json.dump(panel.box_list, f, indent=4)
+
         print(f'导出完成：{total}')
 
     def clear_batchdet(self):
@@ -709,7 +722,9 @@ class MyWindow(QtWidgets.QMainWindow):
         "单图检测：清空"
         self.ui.lb_objdet_input.clear()
         self.ui.lb_objdet_output.clear()
-        self.input_image_path = self.output_image_path = None
+        self.input_image_path = None
+        self.output_image_path = None
+        self.output_image_box = None
         self.stop_thread_objdet()
         print(f"清空完成")
 
@@ -733,6 +748,12 @@ class MyWindow(QtWidgets.QMainWindow):
             dst_file=output_file,
             progress_bar=self.ui.progressBar_objdet,
         )
+        if self.output_image_box is not None:
+            output_file_box = output_file.with_suffix('.txt')
+            with output_file_box.open('w') as f:
+                json.dump(self.output_image_box, f, indent=4)
+            print(f'单图检测：导出锚框文件：{output_file_box}')
+
         print(f'导出完成')
 
     def export_file(self, src_file: P, dst_file: P, progress_bar: QProgressBar):
@@ -804,7 +825,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.stop_thread_objdet()
 
     def handle_detection_result_single(self, result):
-        result = result[StringConstants.result]
+        result, images_to_boxes = result[StringConstants.result], result[StringConstants.images_to_boxes]
         assert len(result) == 1
         output_image_path = result[0]
         self.run_progress_bar(self.ui.progressBar_objdet)
@@ -812,6 +833,11 @@ class MyWindow(QtWidgets.QMainWindow):
         self.output_image_path = output_image_path
         self.stop_thread_objdet()
         print(f"目标检测结果已经展示：{output_image_path}")
+        if images_to_boxes is None:
+            return
+        print(f'单图检测结果：{images_to_boxes}')
+        assert len(images_to_boxes) == 1
+        self.output_image_box = dict.popitem(images_to_boxes)[1]
 
     def show_image(self, image_path, label: QLabel):
         "将一个图片路径显示到label上面"

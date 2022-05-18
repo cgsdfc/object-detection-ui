@@ -59,7 +59,7 @@ def draw_anchor_box(res_path,
         print(f'模型关于类别的输出文件：{vis_res_path}')
 
     # 图像名字到上面所有锚框+置信度的映射
-    images_to_boxes = defaultdict(list)
+    images_to_boxes = {p.name: [] for p in result}
 
     for cls, path in zip(vis_classes, vis_res_path):
         if verbose:
@@ -76,9 +76,7 @@ def draw_anchor_box(res_path,
                 conf = round(float(conf), 2)
                 if conf < conf_thresh:
                     continue
-                input_image = os.path.join(output_path, img_name)
-                if not os.path.exists(input_image):
-                    # 文件不存在，说明这个文件不需要可视化。
+                if img_name not in images_to_boxes:
                     continue
                 box = [x_min, y_min, x_max, y_max]
                 images_to_boxes[img_name].append((box, cls, conf))
