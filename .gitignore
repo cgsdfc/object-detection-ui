@@ -3,7 +3,9 @@ __pycache__/
 .vscode/
 *.pyc
 /export/
-output2/
 *-checkpoint.ipynb
-output3/
-tmp/
+/build
+/dist
+/main.spec
+/test_images/tmp
+/bin
