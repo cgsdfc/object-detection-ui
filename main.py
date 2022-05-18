@@ -369,6 +369,26 @@ class ObjdetThread(QThread):
 
 
 class ObjdetImagePanel:
+    "单图检测的图片面板"
+
+    def __init__(self, input_image_label: QLabel, output_image_label: QLabel):
+        self.input_image_label = input_image_label
+        self.output_image_label = output_image_label
+        self.clear()
+
+    def clear(self):
+        self.input_image_label.clear()
+        self.output_image_label.clear()
+        self.input_image_path = None
+        self.output_image_path = None
+        self.output_image_box = None
+
+    def set_input(self, image_file):
+        self.input_image_path = image_file
+        self.output_image_path = None  # 旧的识别结果作废了。
+
+
+class BatchdetImagePanel:
     "多图检测的一个图片面板。"
 
     def __init__(self, label: QLabel) -> None:
@@ -546,9 +566,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
     def init_objdet_tab(self):
         """单图识别：初始化"""
-        self.input_image_path = None
-        self.output_image_path = None
-        self.output_image_box = None
+        self.image_panel = ObjdetImagePanel(self.ui.lb_objdet_input, self.ui.lb_objdet_output)
         self.thread_objdet = None
         self.ui.progressBar_objdet.reset()
         self.ui.pb_objdet_open.clicked.connect(self.open_objdet)
@@ -569,7 +587,7 @@ class MyWindow(QtWidgets.QMainWindow):
         label_list: list[QLabel] = [
             getattr(self.ui, f"X{i + 1}") for i in range(NUM_BATCH)
         ]
-        self.image_panel_list = list(map(ObjdetImagePanel, label_list))
+        self.image_panel_list = list(map(BatchdetImagePanel, label_list))
         self.NUM_BATCH = NUM_BATCH
 
     def total_input_images_batchdet(self):
@@ -713,29 +731,24 @@ class MyWindow(QtWidgets.QMainWindow):
         if not image_file:
             print("用户没有任何输入")
             return
-        if not self.show_image(image_file, self.ui.lb_objdet_input):
+        if not self.show_image(image_file, self.image_panel.input_image_label):
             QMessageBox.warning(self, "错误", f"文件{image_file}不是合法的图像格式。")
             return
         print(f"图像展示成功：{image_file}")
-        self.input_image_path = image_file
-        self.output_image_path = None  # 旧的识别结果作废了。
+        self.image_panel.set_input(image_file)
 
     def clear_objdet(self):
         "单图检测：清空"
-        self.ui.lb_objdet_input.clear()
-        self.ui.lb_objdet_output.clear()
-        self.input_image_path = None
-        self.output_image_path = None
-        self.output_image_box = None
+        self.image_panel.clear()
         self.stop_thread_objdet()
         print(f"清空完成")
 
     def export_objdet(self):
         "单图检测：导出检测结果"
-        if self.output_image_path is None:
+        if self.image_panel.output_image_path is None:
             QMessageBox.warning(self, "错误", "检测结果为空，请先输入一张图片进行检测")
             return
-        output_image_path = P(self.output_image_path)
+        output_image_path = P(self.image_panel.output_image_path)
         output_dir = QFileDialog.getExistingDirectory(self, "选择导出目录", directory=export_dir())
         if not output_dir:
             print(f"用户取消了导出")
@@ -747,10 +760,10 @@ class MyWindow(QtWidgets.QMainWindow):
             dst_file=output_file,
             progress_bar=self.ui.progressBar_objdet,
         )
-        if self.output_image_box is not None:
+        if self.image_panel.output_image_box is not None:
             output_file_box = output_file.with_suffix('.txt')
             with output_file_box.open('w') as f:
-                json.dump(self.output_image_box, f, indent=4)
+                json.dump(self.image_panel.output_image_box, f, indent=4)
             print(f'单图检测：导出锚框文件：{output_file_box}')
 
         print(f'导出完成')
@@ -787,11 +800,11 @@ class MyWindow(QtWidgets.QMainWindow):
     def detect_objdet(self):
         "单图目标检测"
         # 没有输入图像。
-        if self.input_image_path is None:
+        if self.image_panel.input_image_path is None:
             QMessageBox.warning(self, "错误", "必须先打开一张输入图像")
             return
         # 已有输出图像。
-        if self.output_image_path is not None:
+        if self.image_panel.output_image_path is not None:
             reply = QMessageBox.question(
                 self,
                 "提示",
@@ -802,10 +815,12 @@ class MyWindow(QtWidgets.QMainWindow):
             if reply == QMessageBox.Cancel:
                 return
             print(f"用户要求重新检测")
-            self.output_image_path = None
+            self.image_panel.output_image_path = None
 
-        assert os.path.isfile(self.input_image_path) and self.output_image_path is None
-        input_image_path = P(self.input_image_path)
+        assert os.path.isfile(self.image_panel.input_image_path) and \
+               self.image_panel.output_image_path is None
+
+        input_image_path = P(self.image_panel.input_image_path)
         print(f"目标识别中：{input_image_path}")
         self.start_thread_objdet([input_image_path], self.handle_detection_result_single)
 
@@ -828,15 +843,15 @@ class MyWindow(QtWidgets.QMainWindow):
         assert len(result) == 1
         output_image_path = result[0]
         self.run_progress_bar(self.ui.progressBar_objdet)
-        self.show_image(output_image_path, self.ui.lb_objdet_output)
-        self.output_image_path = output_image_path
+        self.show_image(output_image_path, self.image_panel.output_image_label)
+        self.image_panel.output_image_path = output_image_path
         self.stop_thread_objdet()
         print(f"目标检测结果已经展示：{output_image_path}")
         if images_to_boxes is None:
             return
         print(f'单图检测结果：{images_to_boxes}')
         assert len(images_to_boxes) == 1
-        self.output_image_box = images_to_boxes
+        self.image_panel.output_image_box = images_to_boxes
 
     def show_image(self, image_path, label: QLabel):
         "将一个图片路径显示到label上面"
