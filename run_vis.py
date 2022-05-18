@@ -29,7 +29,7 @@ if __name__ == '__main__':
         input_json = json.load(f)
 
     input_json_schema(input_json)
-    result, image_to_boxes = vis.draw_anchor_box(**input_json)
+    result, image_to_boxes = vis.draw_anchor_box(verbose=False, **input_json)
     result = list(map(str, result))
     output_json = output_json_schema(result, image_to_boxes)
-    json.dump(output_json, sys.stdout, indent=4)
+    json.dump(output_json, sys.stdout)

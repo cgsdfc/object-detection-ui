@@ -34,6 +34,8 @@ def draw_anchor_box(res_path,
     if raw_images_list is None:  # 支持直接输入路径列表。
         assert raw_images_path is not None
         raw_images_list = list(P(raw_images_path).glob('*.jpg'))
+    else:
+        raw_images_list = list(map(P, raw_images_list))
 
     result = []
     for p in raw_images_list:
@@ -47,17 +49,21 @@ def draw_anchor_box(res_path,
     else:
         color = {cls: tuple(np.random.randint(low=0, high=256, size=[3])) for cls in vis_classes}
 
-    print(f'输出路径：{output_path}')
+    if verbose:
+        print(f'输出路径：{output_path}')
 
     vis_res_path = [os.path.join(res_path, res_name) for res_name in os.listdir(res_path) if
                     res_name.split(".")[0].split("_")[-1] in vis_classes]
-    print(f'模型关于类别的输出文件：{vis_res_path}')
+
+    if verbose:
+        print(f'模型关于类别的输出文件：{vis_res_path}')
 
     # 图像名字到上面所有锚框+置信度的映射
     images_to_boxes = defaultdict(list)
 
     for cls, path in zip(vis_classes, vis_res_path):
-        print(f'可视化类别：{cls} 模型输出：{path}')
+        if verbose:
+            print(f'可视化类别：{cls} 模型输出：{path}')
         with open(path, "r") as res_file:
             lines = res_file.readlines()
             for line in lines:
@@ -111,7 +117,8 @@ if __name__ == '__main__':
     result, images_to_boxes = draw_anchor_box(
         raw_images_list=raw_images_list,
         res_path='/home/liao/codes/Results/results/nwpu_p_30shot_novel0_neg0/ene000050',
-        output_path='/home/liao/codes/Object_Detection_UI/test_images/tmp/output_images'
+        output_path='/home/liao/codes/Object_Detection_UI/test_images/tmp/output_images',
+        verbose=True,
     )
     json.dump(
         dict(result=list(map(str, result)), images_to_boxes=images_to_boxes),

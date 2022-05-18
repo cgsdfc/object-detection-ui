@@ -6,6 +6,9 @@ import shlex
 import signal
 import subprocess
 import time
+import json
+import traceback
+
 from collections import defaultdict
 from pathlib import Path as P
 
@@ -80,6 +83,10 @@ def python_dir():
     return "/home/liao/anaconda3/envs"
 
 
+def objdet_python():
+    return '/home/liao/anaconda3/bin/python'
+
+
 class StringConstants:
     "字符串常量，防止编码错误"
     precision = "precision"
@@ -88,6 +95,13 @@ class StringConstants:
     total = "total"
     loss = "loss"
     acc = "acc"  # 测试用
+    # objdet
+    images_to_boxes = 'images_to_boxes'
+    raw_images_list = 'raw_images_list'
+    res_path = 'res_path'
+    output_path = 'output_path'
+    result = 'result'
+    input_json_dot_json = 'input_json_dot_json'
 
 
 class LoglineParseResult:
@@ -231,9 +245,10 @@ class TrainThread(TrainThreadBase):
                 # p.kill() p.terminate() 都是不行的。
                 self.p.send_signal(signal.SIGINT)
                 self.p.wait()
-            except Exception as e:
+            except:
                 status = False
-                print(f"杀死进程时抛出异常：{e}")
+                print(f"杀死进程时抛出异常：")
+                traceback.print_exc()
             else:
                 print(f"进程杀死成功")
 
@@ -254,8 +269,8 @@ class TrainThread(TrainThreadBase):
                 stderr=subprocess.STDOUT,
                 cwd=self.cwd,
             )
-        except Exception as e:
-            print(e)
+        except:
+            traceback.print_exc()
             start_ok = False
             return
         else:
@@ -278,37 +293,29 @@ class TrainThread(TrainThreadBase):
         self.train_end_signal.emit(p.returncode)
 
 
-class ObjdetMode(enum.Enum):
-    copy_output = 0  # 复制已有的输出图像
-    run_vis = 1  # 运行 vis 代码，对输入图像进行可视化
-    run_model = 2  # 运行模型。
-
-
 class ObjdetThread(QThread):
     "Mocked 的目标检测后台线程"
     detection_error_signal = pyqtSignal()  # 是否正常启动了
-    detection_result_signal = pyqtSignal(list)  # 返回输出图像的路径的列表（前提是正常启动了）
+    detection_result_signal = pyqtSignal(dict)  # 返回输出图像的路径的列表（前提是正常启动了）
 
-    def __init__(self, input_image_list: list, mode: ObjdetMode):
+    def __init__(self, input_image_list: list):
         super().__init__()
         input_image_list = list(map(P, input_image_list))
-        assert all(map(P.exists, input_image_list))
         self.input_image_list = input_image_list
-        self.mode = mode
-        self.mode_to_method = {
-            ObjdetMode.copy_output: self.run_copy_output,
-            ObjdetMode.run_vis: self.run_vis,
-            ObjdetMode.run_model: self.run_model,
-        }
-        if self.mode == ObjdetMode.run_vis:
-            self.output_dir = THIS_PROJECT_DIR / 'test_images' / 'output2'
-            self.output_dir.mkdir(exist_ok=True)
+        if MOCKED_OBJDET:
+            self.run = self.run_copy_output
+        else:
+            self.run = self.run_vis
+        self.working_dir = THIS_PROJECT_DIR / 'test_images' / 'tmp'
+        self.working_dir.mkdir(exist_ok=True)
 
-    def run_model(self):
-        raise NotImplementedError
+    def check_input(self):
+        if not all(map(P.exists, self.input_image_list)):
+            self.detection_error_signal.emit()
 
     def run_copy_output(self):
         "把预先生成的图像作为输出"
+        self.check_input()
         if not output_image_dir().is_dir():
             self.detection_error_signal.emit()
             print(f'输出图像目录不存在：{output_image_dir()}')
@@ -322,31 +329,40 @@ class ObjdetThread(QThread):
                 return
             result.append(output_image_path)
 
-        self.detection_result_signal.emit(result)
+        self.detection_result_signal.emit({StringConstants.result: result,
+                                           StringConstants.images_to_boxes: None})
 
     def run_vis(self):
         "把模型的输出文本文件结合输入图像进行可视化后输出"
+        self.check_input()
         if not detection_result_dir().is_dir():
             self.detection_error_signal.emit()
             print(f'模型预测输出目录不存在：{detection_result_dir()}')
             return
+        input_json = {
+            StringConstants.raw_images_list: list(map(str, self.input_image_list)),
+            StringConstants.res_path: str(detection_result_dir()),
+            StringConstants.output_path: str(self.working_dir.joinpath('output_images')),
+        }
+        input_json_file = self.working_dir.joinpath(StringConstants.input_json_dot_json)
+        with input_json_file.open('w') as f:
+            json.dump(input_json, f, indent=4)
+        cmdline = [
+            objdet_python(),
+            THIS_PROJECT_DIR.joinpath('run_vis.py'),
+            input_json_file,
+        ]
+        cmdline = list(map(str, cmdline))
         try:
-            result = vis.draw_anchor_box(
-                res_path=detection_result_dir(),
-                output_path=str(self.output_dir),
-                raw_images_list=self.input_image_list,
-            )
-        except Exception as e:
+            json_string = subprocess.check_output(cmdline).decode(encoding='utf8')
+            output_json = json.loads(json_string)
+        except:
             self.detection_error_signal.emit()
-            print(f'调用 vis 脚本失败：{e}')
+            print(f'调用脚本失败：')
+            traceback.print_exc()
             return
         else:
-            self.detection_result_signal.emit(result)
-
-    def run(self) -> None:
-        print(f'目标检测线程启动')
-        self.mode_to_method[self.mode]()
-        print(f'目标检测线程退出')
+            self.detection_result_signal.emit(output_json)
 
 
 class ObjdetImagePanel:
@@ -364,7 +380,7 @@ class ObjdetImagePanel:
 
 class MyWindow(QtWidgets.QMainWindow):
     def __init__(self):
-        super(MyWindow, self).__init__()
+        super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
@@ -628,6 +644,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.start_thread_objdet(input_image_list, self.handle_detection_result_batch)
 
     def handle_detection_result_batch(self, result):
+        result = result[StringConstants.result]
         for i, output_image in zip(self.input_image_ids, result):
             panel = self.image_panel_list[i]
             panel.output_image = output_image
@@ -737,8 +754,9 @@ class MyWindow(QtWidgets.QMainWindow):
         try:
             # 可能是权限问题，IO异常。
             dst_file.write_bytes(src_file.read_bytes())
-        except Exception as e:
-            print(f"文件导出异常：{e}")
+        except:
+            print(f"文件导出异常：")
+            traceback.print_exc()
             QMessageBox.warning(self, "文件导出失败", f"文件导出异常，请查看日志。")
         else:
             print(f"文件导出成功：{dst_file}")
@@ -771,7 +789,7 @@ class MyWindow(QtWidgets.QMainWindow):
     def start_thread_objdet(self, input_image_list, handle_detection_result):
         "启动目标检测线程（start和end信号都有公共代码处理）"
         self.stop_thread_objdet()
-        t = ObjdetThread(input_image_list, ObjdetMode.copy_output)
+        t = ObjdetThread(input_image_list)
         t.detection_error_signal.connect(self.handle_detection_error)
         t.detection_result_signal.connect(handle_detection_result)
         t.start()
@@ -783,6 +801,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.stop_thread_objdet()
 
     def handle_detection_result_single(self, result):
+        result = result[StringConstants.result]
         assert len(result) == 1
         output_image_path = result[0]
         self.run_progress_bar(self.ui.progressBar_objdet)
@@ -983,8 +1002,8 @@ class MyWindow(QtWidgets.QMainWindow):
         progress_bar.reset()
         progress_bar.setRange(0, total_steps)
         for step in range(total_steps):
-            sleep_time = random.gauss(mu=step_time, sigma=step_time / 10)
-            time.sleep(sleep_time)
+            # sleep_time = random.gauss(mu=step_time, sigma=step_time / 10)
+            time.sleep(step_time)
             progress_bar.setValue(step + 1)
         progress_bar.reset()
 
