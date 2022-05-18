@@ -28,14 +28,15 @@ from pyqtgraph import PlotDataItem, PlotItem
 
 from Ui_develop import *
 
-# import numpy as np
+import numpy as np
 
 MOCKED_TRAIN = False
-MOCKED_OBJDET = True
+MOCKED_OBJDET = False
+print(f'MOCKED_TRAIN={MOCKED_TRAIN}')
+print(f'MOCKED_OBJDET={MOCKED_OBJDET}')
 
 CODES_DIR = "/home/liao/codes"
 
-# PYTHON_INTERPRETER = "/home/liao/anaconda3/envs/python27/bin/python"
 # 目标检测结果的预生成目录。
 MOCKED_IMAGE_RESULT_DIR = P("/home/liao/codes/Results/vis/conf0-0.5/0.5/nwpu_p_30shot_novel0_neg0")
 
@@ -59,7 +60,8 @@ def input_image_dir():
 
 
 def detection_result_dir():
-    res_path = '/home/liao/codes/Results/results/nwpu_p_10shot_novel0_neg0/ene000050'
+    # res_path = '/home/liao/codes/Results/results/nwpu_p_10shot_novel0_neg0/ene000050'
+    res_path = THIS_PROJECT_DIR / 'test_images' / 'detection_result'
     return P(res_path)
 
 
@@ -101,7 +103,7 @@ class StringConstants:
     res_path = 'res_path'
     output_path = 'output_path'
     result = 'result'
-    input_json_dot_json = 'input_json_dot_json'
+    input_json_dot_json = 'input_json.json'
 
 
 class LoglineParseResult:
@@ -370,12 +372,13 @@ class ObjdetImagePanel:
 
     def __init__(self, label: QLabel) -> None:
         self.label = label
-        self.input_image = None
-        self.output_image = None
+        self.clear()
 
     def clear(self):
         self.label.clear()
-        self.input_image = self.output_image = None
+        self.input_image = None
+        self.output_image = None
+        self.box_list = None
 
 
 class MyWindow(QtWidgets.QMainWindow):
