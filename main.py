@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QLabel,
     QProgressBar,
+    QCheckBox
 )
 from pyqtgraph import PlotDataItem, PlotItem
 
@@ -33,8 +34,6 @@ import numpy as np
 
 MOCKED_TRAIN = False
 MOCKED_OBJDET = False
-print(f'MOCKED_TRAIN={MOCKED_TRAIN}')
-print(f'MOCKED_OBJDET={MOCKED_OBJDET}')
 
 CODES_DIR = "/home/liao/codes"
 
@@ -49,9 +48,7 @@ THIS_PROJECT_DIR = P(__file__).parent
 
 def output_image_dir():
     "预先挑选的检测目录"
-    if MOCKED_OBJDET:
-        return THIS_PROJECT_DIR / 'test_images' / 'output'
-    return None
+    return THIS_PROJECT_DIR / 'test_images' / 'output'
 
 
 def input_image_dir():
@@ -259,9 +256,6 @@ class TrainThread(TrainThreadBase):
         self.train_interrupt_signal.emit(status)
         return True
 
-    def start_process(self):
-        assert self.p is None
-
     def run(self):
         try:
             # 注意，必须把p赋值给self，否则无法杀死进程。
@@ -309,6 +303,7 @@ class ObjdetThread(QThread):
             self.run = self.run_copy_output
         else:
             self.run = self.run_vis
+        print(f'目标检测方法：{self.run}')
         self.working_dir = THIS_PROJECT_DIR / 'test_images' / 'tmp'
         self.working_dir.mkdir(exist_ok=True)
 
@@ -408,11 +403,6 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        if MOCKED_TRAIN:
-            self.TrainThreadClass = TrainThreadMocked
-        else:
-            self.TrainThreadClass = TrainThread
-
         # 辅助变量
         self.python_path = self.ui.le_python_path_pretrain.text
         self.reweight_config = self.ui.le_reweight_config.text
@@ -423,6 +413,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.console = self.ui.te_train_logging
         self.console.setReadOnly(True)
         self.train_mode_raw = self.ui.comboBox_train_mode.currentText
+        self.ui.checkBox_mocked_mode.stateChanged.connect(self.change_mocked_mode)
 
         # 配置面板
         self.init_config_tab()
@@ -432,6 +423,12 @@ class MyWindow(QtWidgets.QMainWindow):
         self.init_objdet_tab()
         # 批量检测
         self.init_batchdet_tab()
+
+    def change_mocked_mode(self):
+        global MOCKED_OBJDET, MOCKED_TRAIN
+        is_mocked = self.ui.checkBox_mocked_mode.isChecked()
+        MOCKED_OBJDET = MOCKED_TRAIN = is_mocked
+        print(f'MockedMode 改变：{is_mocked}')
 
     def update_interval(self):
         data = self.ui.le_update_interval.text()
@@ -965,7 +962,14 @@ class MyWindow(QtWidgets.QMainWindow):
         # 如果线程没有启动，那么UI就维持不变。
         cmd = self.command_for_train_mode()
         assert self.train_thread is None, "残留的训练线程"
-        self.train_thread = self.TrainThreadClass(cmd=cmd, cwd=self.project_dir(), mode=self.train_mode())
+
+        if MOCKED_TRAIN:
+            TrainThreadClass = TrainThreadMocked
+        else:
+            TrainThreadClass = TrainThread
+        print(f'训练线程类：{TrainThreadClass}')
+
+        self.train_thread = TrainThreadClass(cmd=cmd, cwd=self.project_dir(), mode=self.train_mode())
         self.train_thread.train_start_signal.connect(self.handle_train_start)
         self.train_thread.train_step_signal.connect(self.handle_train_step)
         self.train_thread.train_end_signal.connect(self.handle_train_end)
