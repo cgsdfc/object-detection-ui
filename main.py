@@ -8,6 +8,7 @@ import subprocess
 import time
 import json
 import traceback
+from datetime import  datetime
 
 from collections import defaultdict
 from pathlib import Path as P
@@ -428,6 +429,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.ui.pb_train_start.clicked.connect(self.train_start)
         self.ui.pb_train_stop.clicked.connect(self.train_stop)
         self.ui.pb_train_clear.clicked.connect(self.train_clear)
+        self.ui.pb_train_export.clicked.connect(self.train_export)
         # 进度条。
         self.ui.progressBar_train.reset()
         self.train_thread = None
@@ -543,7 +545,7 @@ class MyWindow(QtWidgets.QMainWindow):
         self.plt_keys = self.plt_items.keys
 
     def init_objdet_tab(self):
-        "单图识别：初始化"
+        """单图识别：初始化"""
         self.input_image_path = None
         self.output_image_path = None
         self.output_image_box = None
@@ -848,7 +850,7 @@ class MyWindow(QtWidgets.QMainWindow):
         label.setPixmap(image)
         return True
 
-    def train_mode(self):
+    def train_mode(self) -> TrainMode:
         "训练模式的enum值"
         return TEXT_TO_TRAIN_MODE[self.train_mode_raw()]
 
@@ -897,6 +899,36 @@ class MyWindow(QtWidgets.QMainWindow):
         else:
             cmd = self.fewtune_command()
         return cmd
+
+    def make_train_log_filename(self):
+        current_time = int(time.time())
+        mode = self.train_mode().name
+        return f'{current_time:015d}-{mode}.txt'
+
+    def train_export(self):
+        "训练面板：导出日志"
+        if self.is_training:
+            QMessageBox.warning(self, "错误", f"正在训练中，无法导出日志")
+            return
+        train_log = self.console.toPlainText()
+        if not train_log:
+            print('训练日志为空')
+            reply = QMessageBox.question(self, "提示", "训练日志为空，确定要导出？",
+                                         QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel)
+            if reply == QMessageBox.Cancel:
+                print('取消导出训练日志')
+                return
+
+        output_dir = QFileDialog.getExistingDirectory(self, "导出", directory=export_dir())
+        if not output_dir:
+            print('用户取消了导出')
+            return
+
+        filename = self.make_train_log_filename()
+        output_file = P(output_dir).joinpath(filename)
+        print(f'训练日志导出：{output_file}')
+        self.run_progress_bar(self.ui.progressBar_train)
+        output_file.write_text(train_log)
 
     def train_clear(self):
         "训练面板：重置训练状态和UI"
