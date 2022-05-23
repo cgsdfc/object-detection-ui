@@ -334,10 +334,38 @@ self.thresh)
 经过师兄拷贝新的数据集并且更新预处理流程后，问题修复。
 
 
-用pyinstaller 打包，不用很复杂，打出来的包非常小（才19M），没有任何依赖，也可以运行。
+Win10 安装 Torch：
+
+pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
+
+conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 
 
+配置 PIP 源
+
+https://blog.csdn.net/WTUDAN/article/details/103730689
+
+https://www.jianshu.com/p/9723d85e0509
+
+Linux系统：
+mkdir ~/.pip
+vim ~/.pip/pip.conf
+
+写入以下内容,并保存退出即可。
+
+[global]
+trusted-host=mirrors.aliyun.com
+index-url=https://mirrors.aliyun.com/pypi/simple/
 
 
+Windows系统：
+1、首先在window的文件夹窗口输入 ： %USERPROFILE%
+2、创建pip文件夹
+3、创建pip.ini文件
+4、写入如下内容
 
+[global]
+index-url = https://mirrors.aliyun.com/pypi/simple/
+[install]
+trusted-host=mirrors.aliyun.com
 
