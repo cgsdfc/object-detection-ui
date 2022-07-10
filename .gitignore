@@ -9,3 +9,4 @@ __pycache__/
 /main.spec
 /test_images/tmp
 /bin
+*.html
