@@ -27,6 +27,11 @@ from PyQt5.QtWidgets import (
     QCheckBox
 )
 from pyqtgraph import PlotDataItem, PlotItem
+from qt_material import apply_stylesheet
+from qdarkstyle import load_stylesheet
+from qdarkstyle.light.palette import LightPalette
+from qdarkstyle.dark.palette import DarkPalette
+
 
 from Ui_develop import *
 
@@ -1155,6 +1160,9 @@ class MyWindow(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    # apply_stylesheet(app, theme='dark_teal.xml')
+    app.setStyleSheet(load_stylesheet(palette=LightPalette(), qt_api='pyqt5'))
+
     w = MyWindow()
     w.show()
     sys.exit(app.exec_())
