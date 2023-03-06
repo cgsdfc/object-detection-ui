@@ -1,0 +1,7 @@
+pyqt5
+pyqt5-qt5
+pyqt5-tools
+pyqtgraph
+pyinstaller
+qt_material
+qdarkstyle
